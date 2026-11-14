@@ -6,171 +6,133 @@
   <meta name="robots" content="noindex">
   <title>Admin - Jokel Fashion World</title>
   <link rel="icon" href="/images/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=Manrope:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/src/styles/main.css">
+  <link rel="stylesheet" href="/admin/admin.css">
 </head>
-<body>
-  <header class="admin-header">
-    <div class="w">
-      <a href="/" class="logo" aria-label="Back to site">
-        <img src="/images/logo.png" alt="" class="lg">
-        <span>Admin</span>
+<body class="adm-body">
+  <div id="admin-app" class="adm" hidden>
+    <aside class="adm-side" aria-label="Admin navigation">
+      <a href="/" class="adm-brand" aria-label="Back to public site">
+        <img src="/images/logo.png" alt="" width="36" height="36">
+        <span>Jokel<small>ADMIN</small></span>
       </a>
-      <div id="user-info" class="user-info" hidden></div>
-      <button id="sign-out" class="btn" hidden>Sign out</button>
-    </div>
-  </header>
+      <div class="adm-nav" id="adm-nav" role="navigation" aria-label="Admin sections">
+        <button class="adm-link active" data-tab="dashboard"><i aria-hidden="true">◧</i><span>Dashboard</span></button>
+        <button class="adm-link" data-tab="applications"><i aria-hidden="true">✎</i><span>Applications</span><b class="adm-badge" id="badge-applications" hidden></b></button>
+        <button class="adm-link" data-tab="enquiries"><i aria-hidden="true">✉</i><span>Enquiries</span><b class="adm-badge" id="badge-enquiries" hidden></b></button>
+        <button class="adm-link" data-tab="content"><i aria-hidden="true">▦</i><span>Content</span></button>
+        <button class="adm-link" data-tab="audit"><i aria-hidden="true">☰</i><span>Audit Log</span></button>
+      </div>
+      <div class="adm-foot">
+        <div id="user-info" class="user-info" hidden></div>
+        <a class="adm-site" href="/" target="_blank" rel="noopener">View live site ↗</a>
+        <button id="sign-out" class="btn" hidden>Sign out</button>
+      </div>
+    </aside>
 
-  <nav class="admin-nav">
-    <div class="w">
-      <button class="admin-nav-btn active" data-tab="dashboard">Dashboard</button>
-      <button class="admin-nav-btn" data-tab="applications">Applications</button>
-      <button class="admin-nav-btn" data-tab="enquiries">Enquiries</button>
-      <button class="admin-nav-btn" data-tab="content">Content</button>
-      <button class="admin-nav-btn" data-tab="audit">Audit Log</button>
-    </div>
-  </nav>
-
-  <main id="admin-app" class="admin-main" hidden>
-    <div class="w">
-      <section class="admin-dashboard" id="tab-dashboard">
-        <h1>Dashboard</h1>
+    <main class="adm-main" id="adm-main">
+      <section class="adm-sec" id="tab-dashboard">
+        <div class="adm-top"><div><h1>Dashboard</h1><p class="adm-sub">What needs your attention today.</p></div><button class="btn" id="refresh-all">Refresh</button></div>
         <div class="stats-grid" id="stats"></div>
+        <div class="adm-cols">
+          <div class="adm-card"><div class="adm-card-h"><h3>New applications</h3><button class="adm-more" data-tab="applications" data-filter="submitted">View all →</button></div><div id="recent-apps" class="adm-list"></div></div>
+          <div class="adm-card"><div class="adm-card-h"><h3>New enquiries</h3><button class="adm-more" data-tab="enquiries" data-filter="new">View all →</button></div><div id="recent-enqs" class="adm-list"></div></div>
+        </div>
       </section>
 
-      <section class="admin-section" id="tab-applications" hidden>
-        <div class="section-head">
-          <h2>Applications</h2>
-          <div class="filters">
-            <input type="search" id="app-search" placeholder="Search name, email, reference...">
-            <select id="app-status-filter">
-              <option value="">All statuses</option>
-              <option value="submitted">Submitted</option>
-              <option value="under_review">Under review</option>
-              <option value="accepted">Accepted</option>
-              <option value="rejected">Rejected</option>
-            </select>
-            <button class="btn" id="app-export">Export CSV</button>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table id="applications-table">
-            <thead>
-              <tr>
-                <th><input type="checkbox" id="app-select-all"></th>
-                <th>Reference</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Programme</th>
-                <th>Status</th>
-                <th>Fee</th>
-                <th>Created</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+      <section class="adm-sec" id="tab-applications" hidden>
+        <div class="adm-top"><div><h1>Applications</h1><p class="adm-sub" id="app-count"></p></div><button class="btn" id="app-export">Export CSV</button></div>
+        <div class="adm-tools">
+          <input type="search" id="app-search" placeholder="Search name, email, reference…  ( / )" aria-label="Search applications">
+          <div class="chips" id="app-chips" role="group" aria-label="Filter by status"></div>
+          <input type="hidden" id="app-status-filter" value="">
         </div>
         <div class="bulk-actions" id="app-bulk" hidden>
           <span id="app-bulk-count"></span>
-          <select id="app-bulk-status">
-            <option value="">Set status...</option>
+          <select id="app-bulk-status" aria-label="Set status for selected">
+            <option value="">Set status…</option>
             <option value="submitted">Submitted</option>
             <option value="under_review">Under review</option>
             <option value="accepted">Accepted</option>
             <option value="rejected">Rejected</option>
           </select>
-          <button class="btn" id="app-bulk-apply">Apply</button>
+          <button class="btn g" id="app-bulk-apply">Apply</button>
           <button class="btn" id="app-bulk-clear">Clear</button>
         </div>
-      </section>
-
-      <section class="admin-section" id="tab-enquiries" hidden>
-        <div class="section-head">
-          <h2>Enquiries</h2>
-          <div class="filters">
-            <input type="search" id="enq-search" placeholder="Search name, email...">
-            <select id="enq-status-filter">
-              <option value="">All statuses</option>
-              <option value="new">New</option>
-              <option value="read">Read</option>
-              <option value="replied">Replied</option>
-            </select>
-          </div>
-        </div>
         <div class="table-wrap">
-          <table id="enquiries-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Type</th>
-                <th>Status</th>
-                <th>Created</th>
-                <th></th>
-              </tr>
-            </thead>
+          <table id="applications-table" class="clickable">
+            <thead><tr>
+              <th><input type="checkbox" id="app-select-all" aria-label="Select all"></th>
+              <th>Reference</th><th>Name</th><th>Email</th><th>Programme</th><th>Status</th><th>Fee</th><th>Created</th><th></th>
+            </tr></thead>
             <tbody></tbody>
           </table>
         </div>
       </section>
 
-      <section class="admin-section" id="tab-content" hidden>
+      <section class="adm-sec" id="tab-enquiries" hidden>
+        <div class="adm-top"><div><h1>Enquiries</h1><p class="adm-sub" id="enq-count"></p></div></div>
+        <div class="adm-tools">
+          <input type="search" id="enq-search" placeholder="Search name, email…  ( / )" aria-label="Search enquiries">
+          <div class="chips" id="enq-chips" role="group" aria-label="Filter by status"></div>
+          <input type="hidden" id="enq-status-filter" value="">
+        </div>
+        <div class="table-wrap">
+          <table id="enquiries-table" class="clickable">
+            <thead><tr><th>Name</th><th>Email</th><th>Type</th><th>Status</th><th>Created</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="adm-sec" id="tab-content" hidden>
+        <div class="adm-top"><div><h1>Content</h1><p class="adm-sub">Edit what appears on the public site.</p></div></div>
         <div class="content-tabs">
           <button class="content-tab active" data-content="programmes">Programmes</button>
-          <button class="content-tab" data-content="gallery">Gallery</button>
+          <button class="content-tab" data-content="gallery_items">Gallery</button>
           <button class="content-tab" data-content="achievements">Achievements</button>
         </div>
         <div class="content-panel" id="content-panel"></div>
       </section>
 
-      <section class="admin-section" id="tab-audit" hidden>
-        <div class="section-head">
-          <h2>Audit Log</h2>
-          <div class="filters">
-            <select id="audit-table-filter">
-              <option value="">All tables</option>
-              <option value="applications">Applications</option>
-              <option value="enquiries">Enquiries</option>
-              <option value="programmes">Programmes</option>
-              <option value="gallery_items">Gallery</option>
-              <option value="achievements">Achievements</option>
-            </select>
-          </div>
+      <section class="adm-sec" id="tab-audit" hidden>
+        <div class="adm-top"><div><h1>Audit Log</h1><p class="adm-sub">Every change made in this panel.</p></div></div>
+        <div class="adm-tools">
+          <select id="audit-table-filter" aria-label="Filter by table">
+            <option value="">All tables</option>
+            <option value="applications">Applications</option>
+            <option value="enquiries">Enquiries</option>
+            <option value="programmes">Programmes</option>
+            <option value="gallery_items">Gallery</option>
+            <option value="achievements">Achievements</option>
+          </select>
         </div>
         <div class="table-wrap">
           <table id="audit-table">
-            <thead>
-              <tr>
-                <th>Admin</th>
-                <th>Table</th>
-                <th>ID</th>
-                <th>Field</th>
-                <th>Old</th>
-                <th>New</th>
-                <th>When</th>
-              </tr>
-            </thead>
+            <thead><tr><th>Admin</th><th>Table</th><th>ID</th><th>Field</th><th>Old</th><th>New</th><th>When</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
       </section>
-    </div>
+    </main>
 
     <dialog id="detail-dialog" class="admin-dialog">
-      <form method="dialog">
-        <button class="dialog-close" aria-label="Close">&times;</button>
+      <div class="dlg-body">
+        <button type="button" class="dialog-close" aria-label="Close" data-close>&times;</button>
         <div id="dialog-content"></div>
-      </form>
+      </div>
     </dialog>
 
     <dialog id="content-dialog" class="admin-dialog">
-      <form method="dialog">
-        <button class="dialog-close" aria-label="Close">&times;</button>
+      <div class="dlg-body">
+        <button type="button" class="dialog-close" aria-label="Close" data-close>&times;</button>
         <div id="content-dialog-content"></div>
-      </form>
+      </div>
     </dialog>
-  </main>
-
+  </div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
   <script type="module" src="/admin/main.js"></script>
 </body>
 </html>

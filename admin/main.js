@@ -1,4 +1,4 @@
-﻿import { Clerk } from '@clerk/clerk-js';
+import { Clerk } from '@clerk/clerk-js';
 
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 if (!CLERK_PUBLISHABLE_KEY) {
@@ -64,58 +64,143 @@ async function apiFetch(path, options = {}) {
 function showToast(msg, isError = false) {
   const t = document.createElement('div');
   t.className = 'toast ' + (isError ? 'error' : '');
+  t.setAttribute('role', isError ? 'alert' : 'status');
   t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 4000);
+  ($('#toasts') || document.body).appendChild(t);
+  setTimeout(() => t.remove(), isError ? 6000 : 3500);
 }
 
 // --- Tabs ---
+const TABS = ['dashboard', 'applications', 'enquiries', 'content', 'audit'];
 let currentTab = 'dashboard';
 
-function switchTab(name) {
+function switchTab(name, opts = {}) {
+  if (!TABS.includes(name)) name = 'dashboard';
   currentTab = name;
-  $$('.admin-nav-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
-  ['dashboard', 'applications', 'enquiries', 'content', 'audit'].forEach(t => {
+  $$('.adm-link').forEach(b => {
+    const on = b.dataset.tab === name;
+    b.classList.toggle('active', on);
+    if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+  });
+  TABS.forEach(t => {
     const el = $('#tab-' + t);
     if (el) el.hidden = t !== name;
   });
-  if (name === 'dashboard') loadStats();
+  if (opts.filter !== undefined) {
+    const sel = $(name === 'applications' ? '#app-status-filter' : '#enq-status-filter');
+    if (sel) sel.value = opts.filter;
+  }
+  if (location.hash.slice(1) !== name) history.replaceState(null, '', '#' + name);
+  document.title = name.charAt(0).toUpperCase() + name.slice(1) + ' - Admin - Jokel Fashion World';
+  $('#adm-main')?.scrollTo?.(0, 0); window.scrollTo(0, 0);
+  if (name === 'dashboard') loadDashboard();
   if (name === 'applications') loadApplications();
   if (name === 'enquiries') loadEnquiries();
   if (name === 'content') loadContent();
   if (name === 'audit') loadAudit();
 }
 
-$$('.admin-nav-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-tab]');
+  if (!b) return;
+  switchTab(b.dataset.tab, b.dataset.filter !== undefined ? { filter: b.dataset.filter } : {});
+});
+window.addEventListener('hashchange', () => {
+  const h = location.hash.slice(1);
+  if (TABS.includes(h) && h !== currentTab) switchTab(h);
+});
 
-// --- Stats ---
+// Escape closes dialogs natively; also close on backdrop click
+document.addEventListener('click', (e) => {
+  if (e.target.matches && e.target.matches('dialog.admin-dialog')) e.target.close();
+  if (e.target.closest && e.target.closest('[data-close]')) e.target.closest('dialog')?.close();
+});
+
+function skeletonRows(cols, n = 5) {
+  return Array.from({ length: n }, () => '<tr class="skel">' + '<td><span></span></td>'.repeat(cols) + '</tr>').join('');
+}
+
+function timeAgo(d) {
+  if (!d) return '';
+  const s = Math.max(1, Math.round((Date.now() - new Date(d).getTime()) / 1000));
+  if (s < 60) return 'just now';
+  const m = Math.round(s / 60); if (m < 60) return m + ' min ago';
+  const h = Math.round(m / 60); if (h < 24) return h + ' hr ago';
+  const dd = Math.round(h / 24); if (dd < 30) return dd + ' d ago';
+  return fmtDate(d);
+}
+
+function renderChips(el, options, current, counts, onPick) {
+  el.innerHTML = options.map(([val, label]) =>
+    '<button type="button" class="chip' + (current === val ? ' on' : '') + '" data-val="' + escapeHtml(val) + '">' + escapeHtml(label) +
+    '<em>' + (counts[val] ?? 0) + '</em></button>').join('');
+  el.querySelectorAll('.chip').forEach(c => c.onclick = () => onPick(c.dataset.val));
+}
+
+// --- Dashboard ---
+function setBadge(id, n) {
+  const b = $('#' + id); if (!b) return;
+  b.hidden = !n; b.textContent = n > 99 ? '99+' : String(n || '');
+}
+
 async function loadStats() {
   try {
     const data = await apiFetch('/api/admin/stats');
     const s = data.stats || {};
     $('#stats').innerHTML =
-      statCard(s.totalApplications, 'Total Applications') +
-      statCard(s.submitted, 'Submitted') +
-      statCard(s.underReview, 'Under Review') +
-      statCard(s.accepted, 'Accepted') +
-      statCard(s.rejected, 'Rejected') +
-      statCard(s.feeReceived, 'Fees Received') +
-      statCard(s.totalEnquiries, 'Total Enquiries') +
-      statCard(s.newEnquiries, 'New Enquiries');
+      statCard(s.submitted, 'New applications', 'applications', 'submitted', s.submitted > 0) +
+      statCard(s.underReview, 'Under review', 'applications', 'under_review') +
+      statCard(s.accepted, 'Accepted', 'applications', 'accepted') +
+      statCard(s.newEnquiries, 'New enquiries', 'enquiries', 'new', s.newEnquiries > 0) +
+      statCard(s.totalApplications, 'Total applications', 'applications', '') +
+      statCard(s.rejected, 'Rejected', 'applications', 'rejected') +
+      statCard(s.feeReceived, 'Fees received', 'applications', '') +
+      statCard(s.totalEnquiries, 'Total enquiries', 'enquiries', '');
+    setBadge('badge-applications', s.submitted);
+    setBadge('badge-enquiries', s.newEnquiries);
   } catch (e) {
     showToast('Failed to load stats: ' + e.message, true);
   }
 }
 
-function statCard(val, label) {
-  return '<div class="stat"><span class="stat-val">' + escapeHtml(val ?? 0) + '</span><span class="stat-label">' + escapeHtml(label) + '</span></div>';
+function statCard(val, label, tab, filter, hot) {
+  return '<button type="button" class="stat' + (hot ? ' hot' : '') + '" data-tab="' + tab + '" data-filter="' + escapeHtml(filter) + '">' +
+    '<span class="stat-val">' + escapeHtml(val ?? 0) + '</span><span class="stat-label">' + escapeHtml(label) + '</span></button>';
 }
+
+async function loadDashboard() {
+  $('#recent-apps').innerHTML = '<p class="adm-empty">Loading…</p>';
+  $('#recent-enqs').innerHTML = '<p class="adm-empty">Loading…</p>';
+  const [, apps, enqs] = await Promise.all([
+    loadStats(),
+    apiFetch('/api/admin/applications').catch(() => null),
+    apiFetch('/api/admin/enquiries').catch(() => null),
+  ]);
+  if (apps) allApplications = apps.applications || allApplications;
+  if (enqs) allEnquiries = enqs.enquiries || allEnquiries;
+  const newApps = allApplications.filter(a => a.status === 'submitted').slice(0, 5);
+  const newEnqs = allEnquiries.filter(e => e.status === 'new').slice(0, 5);
+  $('#recent-apps').innerHTML = newApps.map(a =>
+    '<button type="button" class="adm-item" data-open-app="' + escapeHtml(a.id) + '"><strong>' + escapeHtml(a.full_name) + '</strong><span>' +
+    escapeHtml(a.programme_name || '') + '</span><time>' + escapeHtml(timeAgo(a.created_at)) + '</time></button>').join('') ||
+    '<p class="adm-empty">You are all caught up — no new applications.</p>';
+  $('#recent-enqs').innerHTML = newEnqs.map(e =>
+    '<button type="button" class="adm-item" data-open-enq="' + escapeHtml(e.id) + '"><strong>' + escapeHtml(e.name) + '</strong><span>' +
+    escapeHtml((e.message || '').slice(0, 70)) + '</span><time>' + escapeHtml(timeAgo(e.created_at)) + '</time></button>').join('') ||
+    '<p class="adm-empty">You are all caught up — no new enquiries.</p>';
+}
+
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('[data-open-app]'); if (a) openApplicationDialog(a.dataset.openApp);
+  const q = e.target.closest('[data-open-enq]'); if (q) openEnquiryDialog(q.dataset.openEnq);
+});
 
 // --- Applications ---
 let allApplications = [];
 let selectedApps = new Set();
 
 async function loadApplications() {
+  const tb = $('#applications-table tbody'); if (tb && !allApplications.length) tb.innerHTML = skeletonRows(9);
   try {
     const data = await apiFetch('/api/admin/applications');
     allApplications = data.applications || [];
@@ -135,11 +220,17 @@ function renderApplications() {
     return matchSearch && matchStatus;
   });
 
+  const counts = { '': allApplications.length };
+  allApplications.forEach(a => { counts[a.status] = (counts[a.status] || 0) + 1; });
+  renderChips($('#app-chips'), [['', 'All'], ['submitted', 'New'], ['under_review', 'Under review'], ['accepted', 'Accepted'], ['rejected', 'Rejected']], statusFilter, counts,
+    (v) => { $('#app-status-filter').value = v; renderApplications(); });
+  const ac = $('#app-count'); if (ac) ac.textContent = filtered.length + ' of ' + allApplications.length + ' shown';
+
   const tbody = $('#applications-table tbody');
   if (!tbody) return;
   tbody.innerHTML = filtered.map(a => {
     const sel = selectedApps.has(a.id) ? 'checked' : '';
-    return '<tr>' +
+    return '<tr data-row-app="' + escapeHtml(a.id) + '">' +
       '<td><input type="checkbox" class="app-sel" data-id="' + escapeHtml(a.id) + '" ' + sel + '></td>' +
       '<td><code>' + escapeHtml(a.reference) + '</code></td>' +
       '<td>' + escapeHtml(a.full_name) + '</td>' +
@@ -150,7 +241,7 @@ function renderApplications() {
       '<td>' + escapeHtml(fmtDate(a.created_at)) + '</td>' +
       '<td><button class="btn view-app" data-id="' + escapeHtml(a.id) + '">View</button></td>' +
       '</tr>';
-  }).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--mut)">No applications</td></tr>';
+  }).join('') || '<tr><td colspan="9" class="adm-empty">No applications match. Try clearing the search or filter.</td></tr>';
 
   $$('.app-sel').forEach(cb => {
     cb.onchange = () => {
@@ -227,6 +318,7 @@ function detailRow(label, value, isHtml = false) {
 let allEnquiries = [];
 
 async function loadEnquiries() {
+  const tb = $('#enquiries-table tbody'); if (tb && !allEnquiries.length) tb.innerHTML = skeletonRows(6);
   try {
     const data = await apiFetch('/api/admin/enquiries');
     allEnquiries = data.enquiries || [];
@@ -245,18 +337,24 @@ function renderEnquiries() {
     return matchSearch && matchStatus;
   });
 
+  const counts = { '': allEnquiries.length };
+  allEnquiries.forEach(e => { counts[e.status] = (counts[e.status] || 0) + 1; });
+  renderChips($('#enq-chips'), [['', 'All'], ['new', 'New'], ['read', 'Read'], ['replied', 'Replied']], statusFilter, counts,
+    (v) => { $('#enq-status-filter').value = v; renderEnquiries(); });
+  const ec = $('#enq-count'); if (ec) ec.textContent = filtered.length + ' of ' + allEnquiries.length + ' shown';
+
   const tbody = $('#enquiries-table tbody');
   if (!tbody) return;
   tbody.innerHTML = filtered.map(e =>
-    '<tr>' +
-      '<td>' + escapeHtml(e.name) + '</td>' +
+    '<tr data-row-enq="' + escapeHtml(e.id) + '">' +
+      '<td><strong>' + escapeHtml(e.name) + '</strong></td>' +
       '<td>' + escapeHtml(e.email) + '</td>' +
       '<td>' + escapeHtml((e.enquiry_type || '').replace('_', ' ')) + '</td>' +
       '<td><span class="badge ' + escapeHtml(e.status) + '">' + escapeHtml(e.status) + '</span></td>' +
       '<td>' + escapeHtml(fmtDate(e.created_at)) + '</td>' +
       '<td><button class="btn view-enq" data-id="' + e.id + '">View</button></td>' +
     '</tr>'
-  ).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--mut)">No enquiries</td></tr>';
+  ).join('') || '<tr><td colspan="6" class="adm-empty">No enquiries match. Try clearing the search or filter.</td></tr>';
 
   $$('.view-enq').forEach(btn => btn.onclick = () => openEnquiryDialog(String(btn.dataset.id)));
 }
@@ -415,8 +513,8 @@ function openContentDialog(id) {
   }).join('');
 
   $('#content-dialog-content').innerHTML =
-    '<h2>' + (item ? 'Edit' : 'New') + ' ' + escapeHtml(cfg.label.slice(0, -1)) + '</h2>' +
-    '<form id="content-form" class="content-form">' + fieldsHtml + '</form>' +
+    '<h2>' + (item ? 'Edit' : 'New') + ' ' + escapeHtml(cfg.label.replace(/ies$/, 'y').replace(/s$/, '')) + '</h2>' +
+    '<div id="content-form" class="content-form">' + fieldsHtml + '</div>' +
     '<div class="dialog-actions">' +
       '<button type="button" class="btn g" id="save-content">Save</button>' +
       '<button type="button" class="btn" id="cancel-content">Cancel</button>' +
@@ -516,15 +614,14 @@ function wireEvents() {
     const status = $('#app-bulk-status').value;
     if (!status) { showToast('Select a status', true); return; }
     if (!confirm('Set status to ' + status.replace('_',' ') + ' for ' + selectedApps.size + ' applications?')) return;
-    try {
-      for (const id of selectedApps) {
-        await apiFetch('/api/admin/applications/' + id, { method: 'PATCH', body: JSON.stringify({ status }) });
-      }
-      showToast('Updated ' + selectedApps.size + ' applications');
-      selectedApps.clear();
-      if (selectAll) selectAll.checked = false;
-      await Promise.all([loadApplications(), loadStats()]);
-    } catch (e) { showToast(e.message, true); }
+    const ids = [...selectedApps];
+    const results = await Promise.allSettled(ids.map(id =>
+      apiFetch('/api/admin/applications/' + id, { method: 'PATCH', body: JSON.stringify({ status }) })));
+    const failed = results.filter(r => r.status === 'rejected').length;
+    showToast(failed ? ('Updated ' + (ids.length - failed) + ', failed ' + failed) : ('Updated ' + ids.length + ' applications'), !!failed);
+    selectedApps.clear();
+    if (selectAll) selectAll.checked = false;
+    await Promise.all([loadApplications(), loadStats()]);
   });
 
   $('#app-bulk-clear')?.addEventListener('click', () => {
@@ -549,6 +646,21 @@ function wireEvents() {
     a.href = url; a.download = 'applications-' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
     URL.revokeObjectURL(url);
     showToast('CSV exported');
+  });
+
+  $('#applications-table tbody')?.addEventListener('click', (e) => {
+    if (e.target.closest('input,button,a')) return;
+    const tr = e.target.closest('tr[data-row-app]'); if (tr) openApplicationDialog(tr.dataset.rowApp);
+  });
+  $('#enquiries-table tbody')?.addEventListener('click', (e) => {
+    if (e.target.closest('input,button,a')) return;
+    const tr = e.target.closest('tr[data-row-enq]'); if (tr) openEnquiryDialog(tr.dataset.rowEnq);
+  });
+  $('#refresh-all')?.addEventListener('click', () => { loadDashboard(); showToast('Refreshed'); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== '/' || e.target.closest('input,textarea,select') || document.querySelector('dialog[open]')) return;
+    const box = $(currentTab === 'applications' ? '#app-search' : currentTab === 'enquiries' ? '#enq-search' : '');
+    if (box) { e.preventDefault(); box.focus(); }
   });
 
   $('#sign-out')?.addEventListener('click', async () => {
@@ -586,11 +698,12 @@ async function init() {
       : e && e.status === 401
         ? 'Session/auth failed. Sign out and sign in again, and ensure the deployment uses matching Clerk keys and the latest code.'
         : ('Access denied: ' + (e && e.message ? e.message : 'Unknown error'));
-    $('#admin-app').innerHTML = '<div class="w" style="padding:40px 0"><p style="color:#dc3c3c">' + escapeHtml(msg) + '</p><p style="color:var(--mut)">If this persists, verify Vercel env vars (CLERK_SECRET_KEY, VITE_CLERK_PUBLISHABLE_KEY, ADMIN_EMAILS, DATABASE_URL, RATE_LIMIT_SALT) and redeploy.</p></div>';
+    $('#adm-main').innerHTML = '<div style="padding:40px 0"><p style="color:#dc3c3c">' + escapeHtml(msg) + '</p><p style="color:var(--mut)">If this persists, verify Vercel env vars (CLERK_SECRET_KEY, VITE_CLERK_PUBLISHABLE_KEY, ADMIN_EMAILS, DATABASE_URL, RATE_LIMIT_SALT) and redeploy.</p></div>';
     $('#admin-app').hidden = false;
     return;
   }
-  switchTab('dashboard');
+  const start = location.hash.slice(1);
+  switchTab(TABS.includes(start) ? start : 'dashboard');
 }
 
 init();
