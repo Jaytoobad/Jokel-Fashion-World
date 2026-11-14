@@ -239,3 +239,21 @@ code{font-family:monospace;background:var(--bg2);padding:2px 6px;border-radius:4
 .vid-tile video::-webkit-media-controls-panel{background:linear-gradient(transparent,#0008)}
 .note.success{border-left-color:#2ca64e}
 .note.error{border-left-color:#dc3c3c}
+
+/* About page */
+.about-story{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(280px,.9fr);gap:clamp(32px,5vw,72px);align-items:start}
+.about-title{font-size:clamp(2.6rem,5vw,4.8rem);line-height:.95;margin-top:8px}
+.about-intro{margin-top:22px;max-width:42ch;color:var(--ink);font-size:1.2rem}
+.about-prose{margin-top:28px;display:grid;gap:18px;max-width:62ch;color:var(--mut)}
+.about-prose p{margin:0}
+.about-signature{margin-top:8px!important;font-family:var(--serif);font-size:1.5rem;line-height:1.1;text-transform:uppercase;color:var(--gold)!important}
+.about-founder{margin:0;display:grid;gap:16px;align-content:start}
+.about-founder-media .ph{aspect-ratio:4/5;min-height:420px}
+.about-founder-cap{display:grid;gap:4px}
+.about-founder-name{font-family:var(--serif);font-size:1.6rem;text-transform:uppercase;letter-spacing:.04em}
+.about-founder-role{font:400 .7rem var(--sans);letter-spacing:.25em;text-transform:uppercase;color:var(--gold)}
+.about-values{margin-top:40px}
+.vrow-head h3{margin:8px 0 0}
+.vrow-body .sub{margin-top:0}
+@media(max-width:900px){.about-story{grid-template-columns:1fr}.about-founder{max-width:520px}.about-founder-media .ph{min-height:360px}}
+@media(min-width:901px){.about-founder{position:sticky;top:120px}}
