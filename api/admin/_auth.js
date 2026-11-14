@@ -1,19 +1,40 @@
-import { createClerkClient } from '@clerk/backend';
+﻿import { createClerkClient } from '@clerk/backend';
 import { neon } from '@neondatabase/serverless';
 
-const sql = neon(process.env.DATABASE_URL);
-const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+let _sql;
+let _clerk;
 
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+export function getSql() {
+  if (!_sql) {
+    const url = process.env.DATABASE_URL;
+    if (!url) throw new Error('DATABASE_URL env var is required');
+    _sql = neon(url);
+  }
+  return _sql;
+}
+
+function getClerk() {
+  if (!_clerk) {
+    const key = process.env.CLERK_SECRET_KEY;
+    if (!key) throw new Error('CLERK_SECRET_KEY env var is required');
+    _clerk = createClerkClient({ secretKey: key });
+  }
+  return _clerk;
+}
+
+function getAdminEmails() {
+  return (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+}
 
 export async function verifyAdmin(req) {
-  const authHeader = req.headers.authorization;
+  const authHeader = req.headers?.authorization || req.headers?.Authorization;
   if (!authHeader?.startsWith('Bearer ')) {
     return { ok: false, status: 401, error: 'Missing or invalid Authorization header' };
   }
   const token = authHeader.slice(7);
 
   try {
+    const clerkClient = getClerk();
     const session = await clerkClient.verifyToken(token);
     if (!session) {
       return { ok: false, status: 401, error: 'Invalid or expired token' };
@@ -21,7 +42,7 @@ export async function verifyAdmin(req) {
 
     const user = await clerkClient.users.getUser(session.sub);
     const email = user.primaryEmailAddress?.emailAddress?.toLowerCase();
-    if (!email || !ADMIN_EMAILS.includes(email)) {
+    if (!email || !getAdminEmails().includes(email)) {
       return { ok: false, status: 403, error: 'Access denied: email not authorized' };
     }
 
@@ -32,4 +53,5 @@ export async function verifyAdmin(req) {
   }
 }
 
-export { sql };
+// Backward-compatible tagged-template export for existing admin handlers.
+export const sql = (strings, ...values) => getSql()(strings, ...values);
