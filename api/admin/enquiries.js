@@ -77,7 +77,46 @@ export default async function handler(req, res) {
       for (const [field, oldVal, newVal] of audits) {
         await logAudit(auth.adminEmail, 'enquiries', id, field, String(oldVal ?? ''), String(newVal ?? ''));
       }
-      return res.status(200).json({ success: true });
+
+      let emailSent = false;
+      let emailWarning = null;
+      const wantsReply = (reply_subject !== undefined || reply_body !== undefined) && nextSubject && nextBody;
+      if (wantsReply) {
+        const resendKey = process.env.RESEND_API_KEY;
+        const from = process.env.REPLY_FROM_EMAIL;
+        const to = cur.email;
+        if (resendKey && from && to) {
+          try {
+            const resp = await fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: {
+                'Authorization': 'Bearer ' + resendKey,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                from,
+                to: [to],
+                subject: nextSubject,
+                text: nextBody,
+              }),
+            });
+            if (resp.ok) {
+              emailSent = true;
+            } else {
+              const detail = await resp.text().catch(() => '');
+              emailWarning = 'Reply saved but email failed to send.';
+              console.error('Reply email send failed:', resp.status, detail);
+            }
+          } catch (mailErr) {
+            emailWarning = 'Reply saved but email failed to send.';
+            console.error('Reply email send error:', mailErr);
+          }
+        } else if (!resendKey || !from) {
+          emailWarning = 'Reply saved. Email not sent (configure RESEND_API_KEY and REPLY_FROM_EMAIL to enable sending).';
+        }
+      }
+
+      return res.status(200).json({ success: true, emailSent, ...(emailWarning ? { warning: emailWarning } : {}) });
     } catch (e) {
       console.error('Enquiry update error:', e);
       return res.status(500).json({ error: 'Failed to update enquiry' });

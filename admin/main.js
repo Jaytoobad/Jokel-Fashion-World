@@ -301,8 +301,10 @@ function openEnquiryDialog(id) {
     const reply_body = $('#enq-reply-body').value.trim();
     if (!reply_subject || !reply_body) { showToast('Enter subject and reply', true); return; }
     try {
-      await apiFetch('/api/admin/enquiries/' + enq.id, { method: 'PATCH', body: JSON.stringify({ status: 'replied', reply_subject, reply_body }) });
-      showToast('Reply saved');
+      const res = await apiFetch('/api/admin/enquiries/' + enq.id, { method: 'PATCH', body: JSON.stringify({ status: 'replied', reply_subject, reply_body }) });
+      if (res && res.emailSent) showToast('Reply saved and email sent');
+      else if (res && res.warning) showToast(res.warning, false);
+      else showToast('Reply saved');
       dialog.close();
       await Promise.all([loadEnquiries(), loadStats()]);
     } catch (e) { showToast(e.message, true); }
