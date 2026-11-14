@@ -50,9 +50,9 @@ contact:()=>`<section class="sec" style="padding-top:170px"><div class="w two" s
 <form id="cf" novalidate class="rv" style="margin-top:0"><label class="f">Name<input name="name" required></label><label class="f">Email<input name="email" type="email" required></label><label class="f">Enquiry type<select name="enquiry_type" required><option value="">Select…</option><option value="admissions">Admissions</option><option value="custom_design">Custom design / business</option><option value="general">General</option></select></label><label class="f">Message<textarea name="message" rows="4" required></textarea></label><input type="hidden" name="website" value="" tabindex="-1" autocomplete="off"><div class="f"><button class="btn g" type="submit">Send Message</button></div><div class="note f" id="cm" hidden role="status"></div></form></div></section>`
 };
 /* ===== ENGINE ===== */
-$("#nv").innerHTML=PAGES.map((p,i)=>`<a href="#${p[0]}" data-p="${p[0]}" style="--i:${i}">${p[1]}</a>`).join("");
-$("#fl").innerHTML=PAGES.slice(0,5).map(p=>`<a href="#${p[0]}">${p[1]}</a>`).join("");
-$("#fc").innerHTML=C.contact.social.map(s=>`<a href="${s[1]}">${s[0]}</a>`).join("")+`<a href="tel:+233556213555">${C.contact.phone}</a><a href="mailto:${C.contact.email}">${C.contact.email}</a><a href="#contact">${C.contact.location}</a>`;
+$("#nv").innerHTML=PAGES.map((p,i)=>`<a href="/${p[0]==='home'?'':p[0]}" data-p="${p[0]}" style="--i:${i}">${p[1]}</a>`).join("");
+$("#fl").innerHTML=PAGES.slice(0,5).map(p=>`<a href="/${p[0]==='home'?'':p[0]}">${p[1]}</a>`).join("");
+$("#fc").innerHTML=C.contact.social.map(s=>`<a href="${s[1]}">${s[0]}</a>`).join("")+`<a href="tel:+233556213555">${C.contact.phone}</a><a href="mailto:${C.contact.email}">${C.contact.email}</a><a href="/contact">${C.contact.location}</a>`;
 $("#ft").textContent=C.tagline;$("#yr").textContent=new Date().getFullYear();document.querySelectorAll(".lg").forEach(i=>i.src=LOGO);{const l=document.createElement("link");l.rel="icon";l.href=LOGO;document.head.appendChild(l)}
 const rm=matchMedia("(prefers-reduced-motion:reduce)").matches;
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("in");e.target.querySelectorAll(":scope>.ph.rv").forEach(x=>x.classList.add("in"));io.unobserve(e.target)}}),{threshold:.12});
@@ -61,22 +61,23 @@ function setupTileVideos(root=document){
   root.querySelectorAll('.vid-tile').forEach(tile=>{
     const v=tile.querySelector('video');const btn=tile.querySelector('.play'); if(!v||!btn) return;
     if(!v.src && v.dataset.src){ v.src=v.dataset.src; }
-    const setShort=()=>{ if(rm){ v.controls=true; btn.style.display='none'; return; } v.muted=true; v.loop=true; v.dataset.autoplay='1'; tile.classList.add('autoplaying'); btn.style.display='none'; v.play().catch(()=>{ btn.style.display=''; v.controls=false; }); };
-    const setLong=()=>{ tile.classList.add('long-video'); btn.style.display=''; v.controls=false; v.removeAttribute('autoplay'); };
+    const setShort=()=>{ v.muted=true; v.loop=true; v.controls=false; v.dataset.autoplay='1'; tile.classList.add('autoplaying'); btn.style.display='none'; if(!rm){ v.play().catch(()=>{ btn.style.display=''; v.controls=false; }); } else { v.controls=true; } };
+    const setLong=()=>{ tile.classList.add('long-video'); btn.style.display=''; v.controls=false; v.removeAttribute('autoplay'); v.loop=false; };
     if(v.readyState>=1){ (v.duration && v.duration <= 12) ? setShort() : setLong(); }
     else v.addEventListener('loadedmetadata',()=>{ (v.duration && v.duration <= 12) ? setShort() : setLong(); },{once:true});
     v.addEventListener('error',()=>{ btn.style.display=''; btn.textContent='!'; btn.title='Video unavailable'; v.controls=true; });
-    const toggle=async(ev)=>{ ev.stopPropagation(); if(v.paused){ tile.classList.add('playing-long'); v.muted=false; v.controls=true; try{ await v.play(); btn.style.display='none'; }catch(e){ v.muted=true; try{ await v.play(); btn.style.display='none'; }catch(_){ btn.style.display=''; } } } else { v.pause(); btn.style.display=''; } };
+    const toggle=async(ev)=>{ if(ev) ev.stopPropagation(); v.controls=true; if(v.paused){ tile.classList.add('playing-long'); tile.classList.remove('autoplaying'); v.muted=false; try{ await v.play(); btn.style.display='none'; }catch(e){ v.muted=true; try{ await v.play(); btn.style.display='none'; }catch(_){ btn.style.display=''; } } } else { v.pause(); if(tile.classList.contains('long-video')) btn.style.display=''; } };
     btn.addEventListener('click',toggle);
-    tile.addEventListener('click',(ev)=>{ if(ev.target.closest('.play')) return; if(tile.classList.contains('long-video')||v.controls){ toggle(ev); } });
+    tile.addEventListener('click',(ev)=>{ if(ev.target.closest('.play')) return; if(ev.target===v || v.contains(ev.target)) return; if(tile.classList.contains('long-video') && v.paused){ toggle(ev); } });
     if(!rm) ioV.observe(v);
   });
 }
-function go(){let h=location.hash.slice(1);if(!R[h])h="home";$("#m").innerHTML=R[h]();
+function route(){let p=location.pathname.replace(/^\/+|\/+$/g,'')||'home'; if(!R[p]){const h=location.hash.slice(1); p=R[h]?h:'home';} return p;}
+function go(){let h=route(); const want=h==='home'?'/':'/'+h; if(location.pathname!==want) history.replaceState(null,'',want+location.search); if(location.hash) history.replaceState(null,'',location.pathname+location.search); $("#m").innerHTML=R[h]();
  if(!$("#m").querySelector("h1")){$("#m").querySelector("h2")?.setAttribute("aria-level","1");$("#m").querySelector("h2")?.setAttribute("role","heading")}document.title=(h=="home"?"Jokel Fashion World — Fashion House & Academy":PAGES.find(p=>p[0]==h)[1]+" — Jokel Fashion World");
  document.querySelectorAll("nav a").forEach(a=>a.classList.toggle("on",a.dataset.p==h));
  setMenu(false);scrollTo(0,0);if(!rm)$("#m").animate([{opacity:0,transform:"translateY(14px)"},{opacity:1,transform:"none"}],{duration:600,easing:"ease-out"});
- document.querySelectorAll(".rv").forEach(e=>io.observe(e.classList.contains("ph")?e.parentElement:e));document.querySelectorAll("video[data-amb]").forEach(v=>{v.dataset.amb="1";if(rm){v.controls=true}else{ioV.observe(v);v.play().catch(()=>{})}});setupTileVideos(document);
+ document.querySelectorAll(".rv").forEach(e=>io.observe(e.classList.contains("ph")?e.parentElement:e));document.querySelectorAll("video[data-amb]").forEach(v=>{v.controls=true; v.playsInline=true; v.preload=v.preload||'metadata'; v.dataset.amb="1"; if(!rm){ioV.observe(v);} });setupTileVideos(document);
  async function handleSubmit(form, endpoint, msgEl, successMsg) {
    const btn = form.querySelector('button[type="submit"]');
    const originalBtnText = btn.textContent;
@@ -118,10 +119,10 @@ function go(){let h=location.hash.slice(1);if(!R[h])h="home";$("#m").innerHTML=R
  const af = $("#af"); if (af) af.onsubmit = ev => { ev.preventDefault(); handleSubmit(af, '/api/application', $("#fm"), 'Application submitted successfully!'); };
  const cf = $("#cf"); if (cf) cf.onsubmit = ev => { ev.preventDefault(); handleSubmit(cf, '/api/enquiry', $("#cm"), 'Message sent successfully!'); }
 }
-addEventListener("hashchange",go);go();
+addEventListener("popstate",go);document.addEventListener("click",e=>{const a=e.target.closest('a[href]'); if(!a||a.target==="_blank"||a.hasAttribute("download")||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey) return; const href=a.getAttribute("href")||""; if(href.startsWith("tel:")||href.startsWith("mailto:")||href.startsWith("http")) return; if(href.startsWith("#")){const p=href.slice(1); if(R[p]){e.preventDefault(); history.pushState(null,"","/"+(p==="home"?"":p)); go();} return;} if(href.startsWith("/")){const url=new URL(a.href,location.origin); if(url.origin!==location.origin) return; const path=url.pathname.replace(/^\/+|\/+$/g,"")||"home"; if(!R[path]) return; e.preventDefault(); history.pushState(null,"",url.pathname+url.search); go();}});go();
 function setMenu(o){$("#nv").classList.toggle("open",o);document.querySelector("header").classList.toggle("open",o);$("#bg").setAttribute("aria-expanded",o);$("#bg").textContent=o?"Close":"Menu";document.body.style.overflow=o?"hidden":""}
 $("#bg").onclick=()=>setMenu(!$("#nv").classList.contains("open"));document.querySelectorAll("nav a").forEach(a=>a.addEventListener("click",()=>setMenu(false)));
-document.addEventListener("click",e=>{const t=e.target.closest(".t");if(t && !t.classList.contains("vid-tile")){const l=$("#li");l.style.setProperty("--h",(t.dataset.i*47+(t.closest(".mos")?28:0))%360);l.dataset.l=t.dataset.t;{const u=C.images[t.dataset.k];l.style.backgroundImage=u?`url('${u}')`:"";l.style.backgroundSize=u?"contain":"";l.style.backgroundPosition=u?"center":"";l.style.backgroundRepeat="no-repeat";l.classList.toggle("img",!!u)}$("#lt").textContent=t.dataset.t;const v=$("#lv");$("#lb").classList.remove("vid");$("#lb").classList.add("on");$("#lc").focus()}
+document.addEventListener("click",e=>{const t=e.target.closest(".t");if(t && !t.classList.contains("vid-tile")){const l=$("#li");l.style.setProperty("--h",(t.dataset.i*47+(t.closest(".mos")?28:0))%360);l.dataset.l=t.dataset.t;{const u=C.images[t.dataset.k];l.style.backgroundImage=u?`url('${u}')`:"";l.style.backgroundSize=u?"contain":"";l.style.backgroundPosition=u?"center":"";l.style.backgroundRepeat="no-repeat";l.classList.toggle("img",!!u)}$("#lt").textContent=t.dataset.t;const v=$("#lv"); if(v){v.pause();v.removeAttribute("src");} $("#lb").classList.remove("vid");$("#lb").classList.add("on");$("#lc").focus()}
  const p=e.target.closest("[data-prog]");if(p)setTimeout(()=>{const s=$("#pg");if(s)s.value=p.dataset.prog},50)});
 const cl=()=>{$("#lb").classList.remove("on");const v=$("#lv");v.pause();v.removeAttribute("src");v.load()};$("#lc").onclick=cl;$("#lb").onclick=e=>{if(e.target.id=="lb")cl()};addEventListener("keydown",e=>{if(e.key=="Escape"){cl();setMenu(false)}});
 const pb=$("#pb");addEventListener("scroll",()=>{pb.style.transform=`scaleX(${scrollY/Math.max(1,document.documentElement.scrollHeight-innerHeight)})`},{passive:true});
