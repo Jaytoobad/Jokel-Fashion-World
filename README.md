@@ -6,9 +6,19 @@ Fashion house + fashion academy website for Jokel Fashion World (Achiaman, Ghana
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173
+npm run dev        # http://localhost:5173 (static site only, NO /api)
 npm run build      # outputs dist/
 ```
+
+**To test the forms locally you must run the Vercel dev server** (it serves the site AND the /api functions together):
+
+```bash
+npx vercel dev     # http://localhost:3000 (site + /api/enquiry, /api/application)
+```
+
+Or use a Vercel Preview Deployment (push to a branch, Vercel gives you a URL).
+
+Plain `npm run dev` (Vite) does NOT run the `/api` functions.
 
 Node 20 or newer. If `vite@^7` is not the latest, run `npm install vite@latest`.
 
@@ -22,14 +32,18 @@ Node 20 or newer. If `vite@^7` is not the latest, run `npm install vite@latest`.
 | `src/main.js` | Page templates, hash routing (`#home`, `#about`, ...), animations, forms, lightbox |
 | `src/styles/main.css` | Design tokens (colours and fonts at the top) and all styling |
 | `index.html` | Page shell, title, meta tags, fonts |
+| `admin/index.html` | Admin area entry (separate Vite build) |
 | `db/schema.sql` | Database schema for Neon (plain Postgres) |
 | `api/enquiry.js` | Vercel Function: POST `/api/enquiry` |
 | `api/application.js` | Vercel Function: POST `/api/application` |
+| `api/admin/*.js` | Vercel Functions: admin API (protected) |
 | `docs/` | `CONTENT_CHECKLIST.md` (what is still open), `ADMIN.md` (admin plan) |
 
 ## Pages
 
 Home, About, Academy, Programmes (6-month beginner course + curriculum), Admissions, Designs, Students, Achievements, Contact.
+
+Admin area at `/admin` (separate page, staff only).
 
 ## What works now
 
@@ -39,23 +53,40 @@ Everything visual: all nine pages, mobile menu, animations (respecting reduced m
 
 ## What does NOT work yet
 
-- **There is no admin dashboard and no login.** See `docs/ADMIN.md`.
 - **Hash routing** (`#about`) is not search-engine friendly. Real URLs, a sitemap and per-page metadata need a router.
 - **No online payments, by the owner's decision.** Fees are discussed by phone and paid in person, so no payment code is needed.
+- **Email notification** to owner when an application arrives (next step, see `docs/ADMIN.md`).
 
-## Next steps, in order
+## How to test a submission
 
-1. Create the Neon project, run `db/schema.sql` in the Neon SQL Editor, add `DATABASE_URL` in Vercel under Settings → Environment Variables, then redeploy.
-2. Build the admin area (`docs/ADMIN.md`).
-3. Move to React + TypeScript with a real router (content, styles and media carry over).
-4. Deploy the static site (Vercel or Netlify) on the owner's domain; add sitemap and robots.
+### Local (with vercel dev)
+
+1. Copy `.env.local` to `.env` (or create `.env` with `DATABASE_URL` from Neon, plus `RATE_LIMIT_SALT`, `ADMIN_EMAILS`, Clerk keys).
+2. Run `npx vercel dev` → opens `http://localhost:3000`.
+3. Go to `#admissions`, fill the application form, submit.
+   - Success: "Application submitted successfully! Your reference: JFW-XXXXXXXX"
+   - Error: clear message, never a fake success.
+4. Go to `#contact`, fill the contact form, submit.
+   - Success: "Message sent successfully!"
+   - Error: clear message.
+5. Test rate limit: submit 6+ enquiries or 4+ applications from the same IP within 60 seconds → 429 "Too many requests."
+
+### Deployed (Vercel Preview or Production)
+
+1. Push to GitHub → Vercel creates a Preview Deployment.
+2. Add env vars in Vercel: `DATABASE_URL`, `RATE_LIMIT_SALT`, `ADMIN_EMAILS`, Clerk keys.
+3. Test the same flows on the Preview URL.
 
 ## Database setup (Neon + Vercel)
 
 1. Create a Neon project (or use the existing one).
 2. Open the Neon Console → SQL Editor and run the contents of `db/schema.sql`.
-3. In Vercel project settings, add `DATABASE_URL` (from Neon's connection string) as an Environment Variable.
-4. Redeploy. The functions at `/api/enquiry` and `/api/application` will now persist data.
+3. In Vercel project settings, add these Environment Variables:
+   - `DATABASE_URL` (from Neon's connection string)
+   - `RATE_LIMIT_SALT` (random string, e.g. `openssl rand -hex 32`)
+   - `ADMIN_EMAILS` (comma-separated staff emails, e.g. `joanna@example.com,staff@example.com`)
+   - Clerk keys (see `docs/ADMIN.md`)
+4. Redeploy. The functions at `/api/enquiry`, `/api/application`, and `/api/admin/*` will now work.
 
 ## Content rules
 

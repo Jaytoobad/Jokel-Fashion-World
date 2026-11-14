@@ -13,3 +13,4 @@
 | Banner numbers | The student photo shows phone numbers on a banner; confirm they are current |
 | Timetable, class size | Optional; add to the Programmes page if wanted |
 | Age requirement | Site says 16 or older; confirm |
+| **Privacy notice under forms** | "We use the details you send to reply to your enquiry or application. Only authorised staff can see them." — **Owner must confirm wording**. Check if Ghana's Data Protection Act, 2012 (Act 843) requires registration with the Data Protection Commission or a longer notice (purpose, retention, rights, contact). |

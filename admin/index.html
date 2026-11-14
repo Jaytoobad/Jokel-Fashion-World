@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Admin - Jokel Fashion World</title>
+  <link rel="icon" href="/images/logo.png">
+  <link rel="stylesheet" href="/src/styles/main.css">
+</head>
+<body>
+  <header class="admin-header">
+    <div class="w">
+      <a href="/" class="logo" aria-label="Back to site">
+        <img src="/images/logo.png" alt="" class="lg">
+        <span>Admin</span>
+      </a>
+      <div id="user-info" class="user-info" hidden></div>
+      <button id="sign-out" class="btn" hidden>Sign out</button>
+    </div>
+  </header>
+
+  <nav class="admin-nav">
+    <div class="w">
+      <button class="admin-nav-btn active" data-tab="dashboard">Dashboard</button>
+      <button class="admin-nav-btn" data-tab="applications">Applications</button>
+      <button class="admin-nav-btn" data-tab="enquiries">Enquiries</button>
+      <button class="admin-nav-btn" data-tab="content">Content</button>
+      <button class="admin-nav-btn" data-tab="audit">Audit Log</button>
+    </div>
+  </nav>
+
+  <main id="admin-app" class="admin-main" hidden>
+    <div class="w">
+      <section class="admin-dashboard" id="tab-dashboard">
+        <h1>Dashboard</h1>
+        <div class="stats-grid" id="stats"></div>
+      </section>
+
+      <section class="admin-section" id="tab-applications" hidden>
+        <div class="section-head">
+          <h2>Applications</h2>
+          <div class="filters">
+            <input type="search" id="app-search" placeholder="Search name, email, reference...">
+            <select id="app-status-filter">
+              <option value="">All statuses</option>
+              <option value="submitted">Submitted</option>
+              <option value="under_review">Under review</option>
+              <option value="accepted">Accepted</option>
+              <option value="rejected">Rejected</option>
+            </select>
+            <button class="btn" id="app-export">Export CSV</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="applications-table">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="app-select-all"></th>
+                <th>Reference</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Programme</th>
+                <th>Status</th>
+                <th>Fee</th>
+                <th>Created</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="bulk-actions" id="app-bulk" hidden>
+          <span id="app-bulk-count"></span>
+          <select id="app-bulk-status">
+            <option value="">Set status...</option>
+            <option value="submitted">Submitted</option>
+            <option value="under_review">Under review</option>
+            <option value="accepted">Accepted</option>
+            <option value="rejected">Rejected</option>
+          </select>
+          <button class="btn" id="app-bulk-apply">Apply</button>
+          <button class="btn" id="app-bulk-clear">Clear</button>
+        </div>
+      </section>
+
+      <section class="admin-section" id="tab-enquiries" hidden>
+        <div class="section-head">
+          <h2>Enquiries</h2>
+          <div class="filters">
+            <input type="search" id="enq-search" placeholder="Search name, email...">
+            <select id="enq-status-filter">
+              <option value="">All statuses</option>
+              <option value="new">New</option>
+              <option value="read">Read</option>
+              <option value="replied">Replied</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="enquiries-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="admin-section" id="tab-content" hidden>
+        <div class="content-tabs">
+          <button class="content-tab active" data-content="programmes">Programmes</button>
+          <button class="content-tab" data-content="gallery">Gallery</button>
+          <button class="content-tab" data-content="achievements">Achievements</button>
+        </div>
+        <div class="content-panel" id="content-panel"></div>
+      </section>
+
+      <section class="admin-section" id="tab-audit" hidden>
+        <div class="section-head">
+          <h2>Audit Log</h2>
+          <div class="filters">
+            <select id="audit-table-filter">
+              <option value="">All tables</option>
+              <option value="applications">Applications</option>
+              <option value="enquiries">Enquiries</option>
+              <option value="programmes">Programmes</option>
+              <option value="gallery_items">Gallery</option>
+              <option value="achievements">Achievements</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="audit-table">
+            <thead>
+              <tr>
+                <th>Admin</th>
+                <th>Table</th>
+                <th>ID</th>
+                <th>Field</th>
+                <th>Old</th>
+                <th>New</th>
+                <th>When</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <dialog id="detail-dialog" class="admin-dialog">
+      <form method="dialog">
+        <button class="dialog-close" aria-label="Close">&times;</button>
+        <div id="dialog-content"></div>
+      </form>
+    </dialog>
+
+    <dialog id="content-dialog" class="admin-dialog">
+      <form method="dialog">
+        <button class="dialog-close" aria-label="Close">&times;</button>
+        <div id="content-dialog-content"></div>
+      </form>
+    </dialog>
+  </main>
+
+  <script type="module" src="/admin/main.js"></script>
+</body>
+</html>

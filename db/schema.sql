@@ -84,3 +84,29 @@ create table applications (
 );
 create index applications_status_idx on applications (status);
 create index applications_programme_name_idx on applications (programme_name);
+
+-- Rate limits: hashed IP (with server-side salt), route, window start, count.
+-- Never stores raw IP addresses.
+create table rate_limits (
+  id bigint generated always as identity primary key,
+  ip_hash text not null,
+  route text not null check (route in ('enquiry', 'application')),
+  window_start timestamptz not null,
+  count integer not null default 1,
+  unique (ip_hash, route, window_start)
+);
+create index rate_limits_window_idx on rate_limits (window_start);
+
+-- Audit trail for admin actions on applications and enquiries
+create table audit_log (
+  id bigint generated always as identity primary key,
+  admin_email text not null,
+  target_table text not null check (target_table in ('applications', 'enquiries')),
+  target_id text not null,
+  field_changed text not null,
+  old_value text,
+  new_value text,
+  changed_at timestamptz not null default now()
+);
+create index audit_log_target_idx on audit_log (target_table, target_id);
+create index audit_log_admin_idx on audit_log (admin_email);

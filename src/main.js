@@ -101,7 +101,8 @@ function go(){let h=location.hash.slice(1);if(!R[h])h="home";$("#m").innerHTML=R
    }
  }
  const af = $("#af"); if (af) af.onsubmit = ev => { ev.preventDefault(); handleSubmit(af, '/api/application', $("#fm"), 'Application submitted successfully!'); };
- const cf = $("#cf"); if (cf) cf.onsubmit = ev => { ev.preventDefault(); handleSubmit(cf, '/api/enquiry', $("#cm"), 'Message sent successfully!'); };
+ const cf = $("#cf"); if (cf) cf.onsubmit = ev => { ev.preventDefault(); handleSubmit(cf, '/api/enquiry', $("#cm"), 'Message sent successfully!'); }
+}
 addEventListener("hashchange",go);go();
 function setMenu(o){$("#nv").classList.toggle("open",o);document.querySelector("header").classList.toggle("open",o);$("#bg").setAttribute("aria-expanded",o);$("#bg").textContent=o?"Close":"Menu";document.body.style.overflow=o?"hidden":""}
 $("#bg").onclick=()=>setMenu(!$("#nv").classList.contains("open"));document.querySelectorAll("nav a").forEach(a=>a.addEventListener("click",()=>setMenu(false)));
