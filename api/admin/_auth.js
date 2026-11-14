@@ -1,4 +1,4 @@
-﻿import { createClerkClient } from '@clerk/backend';
+﻿import { createClerkClient, verifyToken } from '@clerk/backend';
 import { neon } from '@neondatabase/serverless';
 
 let _sql;
@@ -34,13 +34,16 @@ export async function verifyAdmin(req) {
   const token = authHeader.slice(7);
 
   try {
-    const clerkClient = getClerk();
-    const session = await clerkClient.verifyToken(token);
-    if (!session) {
+    const secretKey = process.env.CLERK_SECRET_KEY;
+    if (!secretKey) throw new Error('CLERK_SECRET_KEY env var is required');
+
+    const verified = await verifyToken(token, { secretKey });
+    if (!verified?.sub) {
       return { ok: false, status: 401, error: 'Invalid or expired token' };
     }
 
-    const user = await clerkClient.users.getUser(session.sub);
+    const clerkClient = getClerk();
+    const user = await clerkClient.users.getUser(verified.sub);
     const email = user.primaryEmailAddress?.emailAddress?.toLowerCase();
     if (!email || !getAdminEmails().includes(email)) {
       return { ok: false, status: 403, error: 'Access denied: email not authorized' };
