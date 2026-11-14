@@ -8,3 +8,11 @@ supabase/.temp
 
 .vercel
 .env*
+
+# local/scratch
+.env.vercel*
+test_write*.txt
+write_admin*.cjs
+check_clerk.cjs
+run_migration.mjs
+src/main.js.orig

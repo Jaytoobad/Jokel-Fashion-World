@@ -557,14 +557,18 @@ function wireEvents() {
 
 async function init() {
   wireEvents();
+  const signInEl = $('#sign-in-container');
+  if (signInEl) signInEl.remove();
   if (!clerk.user) {
     $('#admin-app').hidden = true;
+    $('#user-info').hidden = true;
+    $('#sign-out').hidden = true;
     const container = document.createElement('div');
     container.id = 'sign-in-container';
     container.style.maxWidth = '420px';
     container.style.margin = '60px auto';
     document.body.appendChild(container);
-    clerk.mountSignIn(container);
+    clerk.mountSignIn(container, { afterSignInUrl: '/admin/', afterSignUpUrl: '/admin/' });
     return;
   }
   const email = clerk.user.primaryEmailAddress?.emailAddress || clerk.user.username || 'Admin';
@@ -575,7 +579,12 @@ async function init() {
   try {
     await apiFetch('/api/admin/stats');
   } catch (e) {
-    $('#admin-app').innerHTML = '<div class="w" style="padding:40px 0"><p style="color:#dc3c3c">Access denied: ' + escapeHtml(e.message) + '</p><p style="color:var(--mut)">Sign in with an authorized admin email (ADMIN_EMAILS).</p></div>';
+    const msg = e && e.status === 403
+      ? 'Access denied: your account is not in ADMIN_EMAILS.'
+      : e && e.status === 401
+        ? 'Session/auth failed. Sign out and sign in again, and ensure the deployment uses matching Clerk keys and the latest code.'
+        : ('Access denied: ' + (e && e.message ? e.message : 'Unknown error'));
+    $('#admin-app').innerHTML = '<div class="w" style="padding:40px 0"><p style="color:#dc3c3c">' + escapeHtml(msg) + '</p><p style="color:var(--mut)">If this persists, verify Vercel env vars (CLERK_SECRET_KEY, VITE_CLERK_PUBLISHABLE_KEY, ADMIN_EMAILS, DATABASE_URL, RATE_LIMIT_SALT) and redeploy.</p></div>';
     $('#admin-app').hidden = false;
     return;
   }
