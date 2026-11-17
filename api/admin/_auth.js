@@ -1,8 +1,8 @@
-﻿import { createClerkClient, verifyToken } from '@clerk/backend';
-import { neon } from '@neondatabase/serverless';
+﻿import { neon } from '@neondatabase/serverless';
+import bcrypt from 'bcrypt';
+import { SignJWT, jwtVerify } from 'jose';
 
 let _sql;
-let _clerk;
 
 export function getSql() {
   if (!_sql) {
@@ -13,17 +13,64 @@ export function getSql() {
   return _sql;
 }
 
-function getClerk() {
-  if (!_clerk) {
-    const key = process.env.CLERK_SECRET_KEY;
-    if (!key) throw new Error('CLERK_SECRET_KEY env var is required');
-    _clerk = createClerkClient({ secretKey: key });
-  }
-  return _clerk;
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'dev-secret-change-in-production');
+const JWT_EXPIRY = '8h';
+const BCRYPT_ROUNDS = 12;
+
+export async function hashPassword(password) {
+  return bcrypt.hash(password, BCRYPT_ROUNDS);
 }
 
-function getAdminEmails() {
-  return (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+export async function verifyPassword(password, hash) {
+  return bcrypt.compare(password, hash);
+}
+
+export async function createToken(payload) {
+  return new SignJWT({ ...payload })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime(JWT_EXPIRY)
+    .sign(JWT_SECRET);
+}
+
+export async function verifyToken(token) {
+  try {
+    const { payload } = await jwtVerify(token, JWT_SECRET);
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+export async function createAdminUser(email, password, name = null) {
+  const sql = getSql();
+  const passwordHash = await hashPassword(password);
+  const result = await sql`
+    insert into admin_users (email, password_hash, name)
+    values (${email.toLowerCase()}, ${passwordHash}, ${name})
+    on conflict (email) do update set
+      password_hash = ${passwordHash},
+      name = ${name},
+      is_active = true,
+      updated_at = now()
+    returning id, email, name, is_active, created_at
+  `;
+  return result[0];
+}
+
+export async function authenticateAdmin(email, password) {
+  const sql = getSql();
+  const result = await sql`
+    select id, email, password_hash, name, is_active
+    from admin_users
+    where email = ${email.toLowerCase()} and is_active = true
+  `;
+  if (result.length === 0) return null;
+  const user = result[0];
+  const valid = await verifyPassword(password, user.password_hash);
+  if (!valid) return null;
+  await sql`update admin_users set last_login_at = now() where id = ${user.id}`;
+  return { id: user.id, email: user.email, name: user.name };
 }
 
 export async function verifyAdmin(req) {
@@ -32,29 +79,20 @@ export async function verifyAdmin(req) {
     return { ok: false, status: 401, error: 'Missing or invalid Authorization header' };
   }
   const token = authHeader.slice(7);
-
-  try {
-    const secretKey = process.env.CLERK_SECRET_KEY;
-    if (!secretKey) throw new Error('CLERK_SECRET_KEY env var is required');
-
-    const verified = await verifyToken(token, { secretKey });
-    if (!verified?.sub) {
-      return { ok: false, status: 401, error: 'Invalid or expired token' };
-    }
-
-    const clerkClient = getClerk();
-    const user = await clerkClient.users.getUser(verified.sub);
-    const email = user.primaryEmailAddress?.emailAddress?.toLowerCase();
-    if (!email || !getAdminEmails().includes(email)) {
-      return { ok: false, status: 403, error: 'Access denied: email not authorized' };
-    }
-
-    return { ok: true, adminEmail: email };
-  } catch (e) {
-    console.error('Auth verification error:', e);
-    return { ok: false, status: 401, error: 'Authentication failed' };
+  const payload = await verifyToken(token);
+  if (!payload || !payload.sub) {
+    return { ok: false, status: 401, error: 'Invalid or expired token' };
   }
+  const sql = getSql();
+  const result = await sql`
+    select id, email, name, is_active
+    from admin_users
+    where id = ${payload.sub} and is_active = true
+  `;
+  if (result.length === 0) {
+    return { ok: false, status: 401, error: 'User not found or inactive' };
+  }
+  return { ok: true, adminEmail: result[0].email, adminId: result[0].id, adminName: result[0].name };
 }
 
-// Backward-compatible tagged-template export for existing admin handlers.
 export const sql = (strings, ...values) => getSql()(strings, ...values);
