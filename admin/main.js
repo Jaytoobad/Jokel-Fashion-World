@@ -491,8 +491,11 @@ function showLoginForm() {
     <div id="login-container" style="max-width:420px;margin:60px auto;padding:24px;background:var(--bg2);border:1px solid var(--line);border-radius:12px">
       <h2 style="margin-top:0">Admin Sign In</h2>
       <form id="login-form">
-        <label>Email<input type="email" name="email" required autocomplete="email"></label>
-        <label>Password<input type="password" name="password" required autocomplete="current-password"></label>
+        <label style="display:flex;align-items:center;gap:8px">Email<input type="email" name="email" required autocomplete="email"></label>
+        <div style="position:relative">
+          <input type="password" name="password" required autocomplete="current-password" style="width:100%;padding-right:34px">
+          <button type="button" id="login-toggle-pw" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--mut);cursor:pointer;font-size:1.2rem;padding:0">&#128065;</button>
+        </div>
         <div class="note f error" id="login-msg" hidden></div>
         <button class="btn g" type="submit" id="login-btn">Sign In</button>
       </form>
@@ -511,6 +514,17 @@ function showLoginForm() {
     const fd = new FormData(e.target);
     await doLogin(fd.get('email'), fd.get('password'));
   };
+  $('#login-toggle-pw')?.addEventListener('click', () => {
+    const inp = $('input[name="password"]');
+    if (!inp) return;
+    if (inp.type === 'password') {
+      inp.type = 'text';
+      $('#login-toggle-pw').textContent = '&#128064;';
+    } else {
+      inp.type = 'password';
+      $('#login-toggle-pw').textContent = '&#128065;';
+    }
+  });
 }
 
 function initApp() {
