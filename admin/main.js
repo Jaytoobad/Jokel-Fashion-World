@@ -79,7 +79,7 @@ function switchTab(name, opts = {}) {
   $$('.adm-link').forEach(b => {
     b.classList.toggle('active', b.dataset.tab === name);
   });
-  $$('.adm-panel').forEach(p => {
+  $$('.adm-sec').forEach(p => {
     p.hidden = p.dataset.tab !== name;
   });
   if (!opts.skipLoad) loadTab(name);
