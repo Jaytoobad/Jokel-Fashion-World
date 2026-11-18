@@ -1,5 +1,5 @@
 ﻿import { neon } from '@neondatabase/serverless';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
 
 let _sql;

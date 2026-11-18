@@ -1,5 +1,5 @@
 import { neon } from '@neondatabase/serverless';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 const sql = neon(process.env.DATABASE_URL);
 const BCRYPT_ROUNDS = 12;

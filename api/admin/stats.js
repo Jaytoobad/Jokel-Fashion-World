@@ -5,9 +5,12 @@ export default async function handler(req, res) {
   if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
 
   try {
-    const [apps, enquiries] = await Promise.all([
+    const [apps, enquiries, programmes, gallery, achievements] = await Promise.all([
       sql`select status, fee_received from applications`,
       sql`select status from enquiries`,
+      sql`select count(*)::int as c from programmes`,
+      sql`select count(*)::int as c from gallery_items`,
+      sql`select count(*)::int as c from achievements`,
     ]);
 
     const stats = {
@@ -19,6 +22,9 @@ export default async function handler(req, res) {
       feeReceived: apps.filter(a => a.fee_received).length,
       totalEnquiries: enquiries.length,
       newEnquiries: enquiries.filter(e => e.status === 'new').length,
+      programmes: programmes[0]?.c ?? 0,
+      gallery_items: gallery[0]?.c ?? 0,
+      achievements: achievements[0]?.c ?? 0,
     };
 
     return res.status(200).json({ stats });

@@ -48,33 +48,36 @@ export default async function handler(req, res) {
 
     const fields = TABLES[table].fields;
 
-    if (req.method === 'GET') {
-      const rows = await raw.unsafe(
+if (req.method === 'GET') {
+      const result = await raw.query(
         `select id, ${fields.map(col).join(', ')} from "${table}" order by sort_order asc, id asc`
       );
-      return res.status(200).json({ items: rows });
+      return res.status(200).json({ items: result.rows || result });
     }
 
-    if (req.method === 'POST') {
+if (req.method === 'POST') {
       const body = req.body || {};
       const values = fields.map(f => coerce(f, body[f]));
       const placeholders = fields.map((_, i) => `$${i + 1}`).join(', ');
       const cols = fields.map(col).join(', ');
-      const result = await raw.unsafe(
+      const result = await raw.query(
         `insert into "${table}" (${cols}) values (${placeholders}) returning id`,
         values
       );
-      await logAudit(auth.adminEmail, table, String(result[0].id), 'created', '', 'created');
-      return res.status(201).json({ id: result[0].id });
+      const rows = result.rows || result;
+      await logAudit(auth.adminEmail, table, String(rows[0]?.id || rows[0]), 'created', '', 'created');
+      return res.status(201).json({ id: rows[0]?.id || rows[0] });
     }
 
     if (req.method === 'PATCH' && id) {
       const body = req.body || {};
-      const current = await raw.unsafe(
+      const currentResult = await raw.query(
         `select ${fields.map(col).join(', ')} from "${table}" where id = $1`,
         [id]
       );
-      if (!current.length) return res.status(404).json({ error: 'Item not found' });
+      const currentRows = currentResult.rows || currentResult;
+      if (!currentRows.length) return res.status(404).json({ error: 'Item not found' });
+      const current = currentRows[0];
 
       const updates = [];
       const params = [];
@@ -83,7 +86,7 @@ export default async function handler(req, res) {
       for (const field of fields) {
         if (body[field] === undefined) continue;
         const newVal = coerce(field, body[field]);
-        const oldVal = coerce(field, current[0][field]);
+        const oldVal = coerce(field, current[field]);
         const same = JSON.stringify(oldVal ?? null) === JSON.stringify(newVal ?? null);
         if (!same) {
           params.push(newVal);
@@ -97,7 +100,7 @@ export default async function handler(req, res) {
       }
 
       params.push(id);
-      await raw.unsafe(
+      await raw.query(
         `update "${table}" set ${updates.join(', ')} where id = $${params.length}`,
         params
       );
@@ -108,7 +111,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'DELETE' && id) {
-      await raw.unsafe(`delete from "${table}" where id = $1`, [id]);
+      await raw.query(`delete from "${table}" where id = $1`, [id]);
       await logAudit(auth.adminEmail, table, String(id), 'deleted', 'exists', '');
       return res.status(200).json({ success: true });
     }

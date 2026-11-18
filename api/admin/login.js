@@ -4,7 +4,20 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
-  const { email, password } = req.body || {};
+  let body = req.body;
+  if (!body && req.headers?.['content-type']?.includes('application/json')) {
+    try {
+      const chunks = [];
+      req.on('data', chunk => chunks.push(chunk));
+      await new Promise((resolve, reject) => {
+        req.on('end', resolve);
+        req.on('error', reject);
+      });
+      const text = Buffer.concat(chunks).toString();
+      body = JSON.parse(text);
+    } catch {}
+  }
+  const { email, password } = body || {};
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password required' });
   }
