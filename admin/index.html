@@ -33,7 +33,7 @@
     </aside>
 
     <main class="adm-main" id="adm-main">
-      <section class="adm-sec" id="tab-dashboard">
+      <section class="adm-sec" id="tab-dashboard" data-tab="dashboard">
         <div class="adm-top"><div><h1>Dashboard</h1><p class="adm-sub">What needs your attention today.</p></div><button class="btn" id="refresh-all">Refresh</button></div>
         <div class="stats-grid" id="stats"></div>
         <div class="adm-cols">
@@ -42,7 +42,7 @@
         </div>
       </section>
 
-      <section class="adm-sec" id="tab-applications" hidden>
+      <section class="adm-sec" id="tab-applications" hidden data-tab="applications">
         <div class="adm-top"><div><h1>Applications</h1><p class="adm-sub" id="app-count"></p></div><button class="btn" id="app-export">Export CSV</button></div>
         <div class="adm-tools">
           <input type="search" id="app-search" placeholder="Search name, email, reference...  ( / )" aria-label="Search applications">
@@ -57,7 +57,7 @@
         <div id="apps-pagination"></div>
       </section>
 
-      <section class="adm-sec" id="tab-enquiries" hidden>
+      <section class="adm-sec" id="tab-enquiries" hidden data-tab="enquiries">
         <div class="adm-top"><div><h1>Enquiries</h1><p class="adm-sub" id="enq-count"></p></div><button class="btn" id="enq-export">Export CSV</button></div>
         <div class="adm-tools">
           <input type="search" id="enq-search" placeholder="Search name, email, message...  ( / )" aria-label="Search enquiries">
@@ -72,7 +72,7 @@
         <div id="enqs-pagination"></div>
       </section>
 
-      <section class="adm-sec" id="tab-content" hidden>
+      <section class="adm-sec" id="tab-content" hidden data-tab="content">
         <div class="adm-top"><div><h1>Content</h1><p class="adm-sub">Manage programmes, gallery, and achievements.</p></div><button class="btn g" id="content-create">Create</button></div>
         <div class="content-tabs" id="content-tabs" role="tablist"></div>
         <div class="table-wrap">
@@ -82,7 +82,7 @@
         </div>
       </section>
 
-      <section class="adm-sec" id="tab-audit" hidden>
+      <section class="adm-sec" id="tab-audit" hidden data-tab="audit">
         <div class="adm-top"><div><h1>Audit Log</h1><p class="adm-sub">Track of admin actions.</p></div></div>
         <div class="table-wrap">
           <table><thead><tr><th>Time</th><th>Admin</th><th>Table</th><th>Record ID</th><th>Field</th><th>Old Value</th><th>New Value</th></tr></thead>
