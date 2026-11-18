@@ -43,11 +43,23 @@ function getUser() {
 async function apiFetch(path, options = {}) {
   const token = getToken();
   if (!token) throw new Error('Not signed in');
+
+  // Read CSRF cookie for state-changing requests
+  const isStateChanging = ['POST', 'PATCH', 'DELETE', 'PUT'].includes(
+    (options.method || 'GET').toUpperCase()
+  );
+  let csrfToken = '';
+  if (isStateChanging) {
+    const match = document.cookie.match('(?:^|; )csrf_token=([^;]*)');
+    csrfToken = match ? match[1] : '';
+  }
+
   const res = await fetch(path, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer ' + token,
+      ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
       ...(options.headers || {}),
     },
   });

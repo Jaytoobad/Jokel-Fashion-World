@@ -1,11 +1,20 @@
 ﻿import { verifyAdmin, sql } from './_auth.js';
 import { logAudit } from '../../lib/utils.js';
+import { validateCsrfToken, checkBodySize, secureError } from '../../lib/security.js';
 
 const ALLOWED_STATUSES = ['submitted', 'under_review', 'accepted', 'rejected'];
 
 export default async function handler(req, res) {
   const auth = await verifyAdmin(req);
   if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
+
+  if (['POST', 'PATCH', 'DELETE'].includes(req.method)) {
+    const csrf = validateCsrfToken(req);
+    if (!csrf.ok) return res.status(csrf.status).json({ error: csrf.error });
+
+    const sizeCheck = checkBodySize(req, 100 * 1024);
+    if (!sizeCheck.ok) return res.status(sizeCheck.status).json({ error: sizeCheck.error });
+  }
 
   const url = new URL(req.url, `http://${req.headers.host}`);
   const pathParts = url.pathname.split('/').filter(Boolean);
@@ -87,7 +96,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true });
     } catch (e) {
       console.error('Application update error:', e);
-      return res.status(500).json({ error: 'Failed to update application' });
+      return secureError(res, 500, 'Failed to update application');
     }
   }
 

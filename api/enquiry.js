@@ -1,5 +1,6 @@
 ﻿import { neon } from '@neondatabase/serverless';
 import { checkRateLimit, getClientIp, validateEmail, trimAndLimit } from '../lib/utils.js';
+import { checkBodySize, secureError } from '../lib/security.js';
 
 let _sql;
 function getSql() {
@@ -17,6 +18,9 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
+
+  const sizeCheck = checkBodySize(req, 50 * 1024);
+  if (!sizeCheck.ok) return res.status(sizeCheck.status).json({ error: sizeCheck.error });
 
   try {
     const ip = getClientIp(req);
@@ -54,6 +58,6 @@ export default async function handler(req, res) {
     return res.status(201).json({ success: true });
   } catch (e) {
     console.error('Enquiry error:', e);
-    return res.status(500).json({ error: 'Failed to save enquiry' });
+    return secureError(res, 500, 'Failed to save enquiry');
   }
 }

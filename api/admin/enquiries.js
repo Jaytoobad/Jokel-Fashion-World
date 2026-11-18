@@ -1,11 +1,20 @@
 ﻿import { verifyAdmin, sql } from './_auth.js';
 import { logAudit } from '../../lib/utils.js';
+import { validateCsrfToken, checkBodySize, secureError } from '../../lib/security.js';
 
 const ALLOWED_STATUSES = ['new', 'read', 'replied'];
 
 export default async function handler(req, res) {
   const auth = await verifyAdmin(req);
   if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
+
+  if (['POST', 'PATCH', 'DELETE'].includes(req.method)) {
+    const csrf = validateCsrfToken(req);
+    if (!csrf.ok) return res.status(csrf.status).json({ error: csrf.error });
+
+    const sizeCheck = checkBodySize(req, 100 * 1024);
+    if (!sizeCheck.ok) return res.status(sizeCheck.status).json({ error: sizeCheck.error });
+  }
 
   const url = new URL(req.url, `http://${req.headers.host}`);
   const pathParts = url.pathname.split('/').filter(Boolean);
@@ -119,7 +128,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, emailSent, ...(emailWarning ? { warning: emailWarning } : {}) });
     } catch (e) {
       console.error('Enquiry update error:', e);
-      return res.status(500).json({ error: 'Failed to update enquiry' });
+      return secureError(res, 500, 'Failed to update enquiry');
     }
   }
 

@@ -1,6 +1,7 @@
 ﻿import { neon } from '@neondatabase/serverless';
 import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
+import { checkLoginRateLimit, recordLoginAttempt } from '../lib/security.js';
 
 let _sql;
 
@@ -58,19 +59,45 @@ export async function createAdminUser(email, password, name = null) {
   return result[0];
 }
 
-export async function authenticateAdmin(email, password) {
+export async function authenticateAdmin(email, password, clientIp = null) {
   const sql = getSql();
+
+  // Check rate limit before allowing authentication
+  if (clientIp) {
+    const rateLimit = await checkLoginRateLimit(clientIp, email);
+    if (!rateLimit.allowed) {
+      return { ok: false, status: 429, error: rateLimit.reason || 'Too many login attempts', lockedUntil: rateLimit.lockedUntil };
+    }
+  }
+
   const result = await sql`
     select id, email, password_hash, name, is_active
     from admin_users
     where email = ${email.toLowerCase()} and is_active = true
   `;
-  if (result.length === 0) return null;
+  if (result.length === 0) {
+    if (clientIp) {
+      await recordLoginAttempt(clientIp, email, false);
+    }
+    return { ok: false, status: 401, error: 'Invalid email or password' };
+  }
   const user = result[0];
   const valid = await verifyPassword(password, user.password_hash);
-  if (!valid) return null;
+
+  if (!valid) {
+    if (clientIp) {
+      await recordLoginAttempt(clientIp, email, false);
+    }
+    return { ok: false, status: 401, error: 'Invalid email or password' };
+  }
+
+  // Record successful login
+  if (clientIp) {
+    await recordLoginAttempt(clientIp, email, true);
+  }
+
   await sql`update admin_users set last_login_at = now() where id = ${user.id}`;
-  return { id: user.id, email: user.email, name: user.name };
+  return { ok: true, user: { id: user.id, email: user.email, name: user.name } };
 }
 
 export async function verifyAdmin(req) {

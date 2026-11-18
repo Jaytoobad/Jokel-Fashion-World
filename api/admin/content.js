@@ -1,6 +1,7 @@
 ﻿import { verifyAdmin } from './_auth.js';
 import { neon } from '@neondatabase/serverless';
 import { logAudit } from '../../lib/utils.js';
+import { validateCsrfToken, checkBodySize, secureError } from '../../lib/security.js';
 
 let _raw;
 function getRaw() {
@@ -33,6 +34,15 @@ function col(field) { return `"${field.replace(/"/g, '""')}"`; }
 export default async function handler(req, res) {
   const auth = await verifyAdmin(req);
   if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
+
+  // CSRF protection for state-changing methods
+  if (['POST', 'PATCH', 'DELETE'].includes(req.method)) {
+    const csrf = validateCsrfToken(req);
+    if (!csrf.ok) return res.status(csrf.status).json({ error: csrf.error });
+
+    const sizeCheck = checkBodySize(req, 100 * 1024);
+    if (!sizeCheck.ok) return res.status(sizeCheck.status).json({ error: sizeCheck.error });
+  }
 
   try {
     const raw = getRaw();
@@ -119,6 +129,6 @@ if (req.method === 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (e) {
     console.error('Content error:', e);
-    return res.status(500).json({ error: 'Failed to process content request' });
+    return secureError(res, 500, 'Failed to process content request');
   }
 }

@@ -1,4 +1,5 @@
 import { verifyAdmin, sql } from './_auth.js';
+import { secureError } from '../../lib/security.js';
 
 export default async function handler(req, res) {
   const auth = await verifyAdmin(req);
@@ -19,6 +20,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ logs: rows });
   } catch (e) {
     console.error('Audit log error:', e);
-    return res.status(500).json({ error: 'Failed to load audit log' });
+    return secureError(res, 500, 'Failed to load audit log');
   }
 }
