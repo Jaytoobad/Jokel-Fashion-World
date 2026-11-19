@@ -20,6 +20,21 @@ export default async function handler(req, res) {
   const pathParts = url.pathname.split('/').filter(Boolean);
   const id = pathParts[pathParts.length - 1];
 
+  if (req.method === 'GET' && id.match(/^\d+$/)) {
+    try {
+      const result = await sql`
+        select id, name, email, enquiry_type, message, status, reply_subject, reply_body, replied_at, created_at
+        from enquiries
+        where id = ${id}
+      `;
+      if (!result.length) return res.status(404).json({ error: 'Enquiry not found' });
+      return res.status(200).json({ enquiry: result[0] });
+    } catch (e) {
+      console.error('Enquiry get error:', e);
+      return res.status(500).json({ error: 'Failed to load enquiry' });
+    }
+  }
+
   if (req.method === 'GET' && !id.match(/^\d+$/)) {
     try {
       const enquiries = await sql`

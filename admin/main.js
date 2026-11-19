@@ -120,13 +120,16 @@ async function loadDashboard() {
   try {
     const data = await apiFetch('/api/admin/stats');
     const s = data.stats || data;
-    $('#stat-apps').textContent = s.totalApplications ?? 0;
-    $('#stat-apps-new').textContent = s.submitted ?? 0;
-    $('#stat-enqs').textContent = s.totalEnquiries ?? 0;
-    $('#stat-enqs-new').textContent = s.newEnquiries ?? 0;
-    $('#stat-programmes').textContent = s.programmes ?? 0;
-    $('#stat-gallery').textContent = s.gallery_items ?? 0;
-    $('#stat-achievements').textContent = s.achievements ?? 0;
+    const grid = $('#stats');
+    grid.innerHTML = `
+      <div class="stat"><div class="stat-val">${s.totalApplications ?? 0}</div><div class="stat-label">Total Applications</div></div>
+      <div class="stat"><div class="stat-val">${s.submitted ?? 0}</div><div class="stat-label">New Applications</div></div>
+      <div class="stat"><div class="stat-val">${s.totalEnquiries ?? 0}</div><div class="stat-label">Total Enquiries</div></div>
+      <div class="stat"><div class="stat-val">${s.newEnquiries ?? 0}</div><div class="stat-label">New Enquiries</div></div>
+      <div class="stat"><div class="stat-val">${s.programmes ?? 0}</div><div class="stat-label">Programmes</div></div>
+      <div class="stat"><div class="stat-val">${s.gallery_items ?? 0}</div><div class="stat-label">Gallery Items</div></div>
+      <div class="stat"><div class="stat-val">${s.achievements ?? 0}</div><div class="stat-label">Achievements</div></div>
+    `;
   } catch (e) {
     showToast('Failed to load dashboard: ' + e.message, true);
   }
@@ -186,7 +189,10 @@ function renderPagination(total, page, perPage, prefix) {
 
 function attachRowClicks(prefix) {
   $$(`#${prefix}-tbody tr[data-id]`).forEach(tr => {
-    tr.addEventListener('click', () => openDetail(prefix, tr.dataset.id));
+    tr.addEventListener('click', () => {
+      if (prefix === 'apps') openApplicationDialog(tr.dataset.id);
+      else if (prefix === 'enqs') openEnquiryDialog(tr.dataset.id);
+    });
   });
   $$(`#${prefix}-pagination button[data-page]`).forEach(btn => {
     btn.addEventListener('click', () => {
@@ -375,7 +381,7 @@ function renderContentTable(table) {
   const isGallery = table === 'gallery_items';
   tbody.innerHTML = contentCache.map(item => `
     <tr data-id="${item.id}">
-      <td>${escapeHtml(item.name || item.title || item.id)}</dd>
+      <td>${escapeHtml(item.name || item.title || item.id)}</td>
       <td>${isGallery ? escapeHtml(item.collection) : escapeHtml(item.slug || '')}</td>
       <td>${item.published !== undefined ? (item.published ? 'Yes' : 'No') : ''}</td>
       <td>${fmtDate(item.created_at)}</td>

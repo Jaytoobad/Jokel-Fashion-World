@@ -20,6 +20,21 @@ export default async function handler(req, res) {
   const pathParts = url.pathname.split('/').filter(Boolean);
   const id = pathParts[pathParts.length - 1];
 
+  if (req.method === 'GET' && id.match(/^[0-9a-f-]{36}$/i)) {
+    try {
+      const result = await sql`
+        select id, reference, programme_name, full_name, email, phone, date_of_birth, address, education_background, additional_info, status, fee_received, admin_notes, created_at
+        from applications
+        where id = ${id}
+      `;
+      if (!result.length) return res.status(404).json({ error: 'Application not found' });
+      return res.status(200).json({ application: result[0] });
+    } catch (e) {
+      console.error('Application get error:', e);
+      return res.status(500).json({ error: 'Failed to load application' });
+    }
+  }
+
   if (req.method === 'GET' && !id.match(/^[0-9a-f-]{36}$/i)) {
     try {
       const applications = await sql`

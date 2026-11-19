@@ -58,7 +58,17 @@ export default async function handler(req, res) {
 
     const fields = TABLES[table].fields;
 
-if (req.method === 'GET') {
+    if (req.method === 'GET' && id) {
+      const result = await raw.query(
+        `select id, ${fields.map(col).join(', ')} from "${table}" where id = $1`,
+        [id]
+      );
+      const rows = result.rows || result;
+      if (!rows.length) return res.status(404).json({ error: 'Item not found' });
+      return res.status(200).json({ item: rows[0] });
+    }
+
+    if (req.method === 'GET') {
       const result = await raw.query(
         `select id, ${fields.map(col).join(', ')} from "${table}" order by sort_order asc, id asc`
       );
