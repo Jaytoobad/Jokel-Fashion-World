@@ -12,8 +12,14 @@
   <link rel="stylesheet" href="/admin/admin.css">
 </head>
 <body class="adm-body">
+  <button id="adm-toggle" class="adm-toggle" aria-label="Toggle navigation" aria-expanded="false">
+    <span class="adm-toggle-bar"></span>
+    <span class="adm-toggle-bar"></span>
+    <span class="adm-toggle-bar"></span>
+  </button>
+  <div id="adm-backdrop" class="adm-backdrop" aria-hidden="true"></div>
   <div id="admin-app" class="adm" hidden>
-    <aside class="adm-side" aria-label="Admin navigation">
+    <aside class="adm-side adm-side-closed" aria-label="Admin navigation">
       <a href="/" class="adm-brand" aria-label="Back to public site">
         <img src="/images/logo.png" alt="" width="36" height="36">
         <span>Jokel<small>ADMIN</small></span>

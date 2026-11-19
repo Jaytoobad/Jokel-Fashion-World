@@ -44,7 +44,6 @@ async function apiFetch(path, options = {}) {
   const token = getToken();
   if (!token) throw new Error('Not signed in');
 
-  // Read CSRF cookie for state-changing requests
   const isStateChanging = ['POST', 'PATCH', 'DELETE', 'PUT'].includes(
     (options.method || 'GET').toUpperCase()
   );
@@ -54,22 +53,29 @@ async function apiFetch(path, options = {}) {
     csrfToken = match ? match[1] : '';
   }
 
-  const res = await fetch(path, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + token,
-      ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
-      ...(options.headers || {}),
-    },
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const err = new Error(data.error || ('HTTP ' + res.status));
-    err.status = res.status;
-    throw err;
+  try {
+    const res = await fetch(path, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token,
+        ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
+        ...(options.headers || {}),
+      },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const err = new Error(data.error || ('HTTP ' + res.status));
+      err.status = res.status;
+      throw err;
+    }
+    return data;
+  } catch (e) {
+    if (e instanceof TypeError || (e.message && e.message.includes('fetch'))) {
+      throw new Error('Network error. Please check your connection and try again.');
+    }
+    throw e;
   }
-  return data;
 }
 
 function showToast(msg, isError = false) {
@@ -537,6 +543,41 @@ function initApp() {
   $('#admin-app').hidden = false;
   const start = location.hash.slice(1);
   switchTab(TABS.includes(start) ? start : 'dashboard');
+  initMobileSidebar();
+}
+
+function initMobileSidebar() {
+  const toggle = $('#adm-toggle');
+  const backdrop = $('#adm-backdrop');
+  const sidebar = $('#adm-nav')?.closest('.adm-side');
+  if (!toggle || !backdrop || !sidebar) return;
+
+  function open() {
+    sidebar.classList.remove('adm-side-closed');
+    sidebar.classList.add('adm-side-open');
+    backdrop.classList.add('open');
+    toggle.setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+  }
+  function close() {
+    sidebar.classList.remove('adm-side-open');
+    sidebar.classList.add('adm-side-closed');
+    backdrop.classList.remove('open');
+    toggle.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
+  }
+  function toggleSidebar() {
+    sidebar.classList.contains('adm-side-open') ? close() : open();
+  }
+
+  toggle.onclick = (e) => { e.stopPropagation(); toggleSidebar(); };
+  backdrop.onclick = close;
+  // Close on Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && sidebar.classList.contains('adm-side-open')) close();
+  });
+  // Close when clicking a nav link
+  $$('.adm-link').forEach(b => b.addEventListener('click', close));
 }
 
 // --- Init ---
