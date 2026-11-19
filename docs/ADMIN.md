@@ -1,66 +1,71 @@
 # Admin: current status and plan
 
-**Status: built.** Admin area at `/admin` with Clerk authentication.
+**Status: built.** Admin area at `/admin` with DB-backed bcrypt/JWT authentication.
 
-## Staff login (Clerk)
+## Staff login (DB-backed bcrypt + JWT)
 
-- **Frontend**: `@clerk/clerk-js` (vanilla JS, loaded via CDN in `admin/index.html`)
-- **Backend**: `@clerk/backend` (Node SDK for token verification in Vercel Functions)
-- **Auth flow**: Clerk hosted sign-in pages. User signs in on Clerk's domain, gets a session JWT. Admin page sends token in `Authorization: Bearer <token>` header to `/api/admin/*` endpoints.
-- **Access control**: Only emails listed in `ADMIN_EMAILS` (comma-separated) can access admin. Verified server-side on every request.
-- **No cookies, no CSRF risk**: Token sent in header, not cookies.
+- **Frontend**: Custom admin SPA at `admin/index.html` with `admin/main.js`
+- **Backend**: `api/admin/_auth.js` with bcryptjs (12 rounds) + jose HS256 JWT (8h expiry)
+- **Auth flow**: POST `/api/admin/login` with email/password → returns JWT → stored in localStorage → sent as `Authorization: Bearer <token>` on all admin API requests
+- **Access control**: Only users in `admin_users` table with `is_active = true` can access admin. Verified server-side on every request.
+- **CSRF protection**: Double-submit cookie pattern. Login sets `csrf_token` cookie (Secure, SameSite=Strict). State-changing requests (POST/PATCH/DELETE) must include `X-CSRF-Token` header matching the cookie value.
+- **Rate limiting**: Max 5 failed login attempts per 15-minute window per IP and per email. 30-minute lockout after threshold. Fail-open on database errors.
+- **No cookies for session**: JWT sent in header, not cookies (except CSRF token cookie).
 
-### Clerk setup steps
+### Admin setup steps
 
-1. Create a Clerk application at https://dashboard.clerk.com
-2. In Clerk Dashboard → **Configure** → **Authentication**:
-   - Enable **Email** (and optionally Password, Social providers)
-   - Disable **Multi-factor authentication** if not needed (or enable for extra security)
-3. In **User & Authentication** → **Email, Phone, Username**:
-   - Set "Email address" as required
-4. In **Sessions** → **Session settings**:
-   - Set session lifetime (e.g., 30 days)
-5. Copy the **Publishable Key** and **Secret Key** from **API Keys**
-6. In Vercel project settings, add these Environment Variables:
-   - `CLERK_PUBLISHABLE_KEY` (pk_test_... or pk_live_)
-   - `CLERK_SECRET_KEY` (sk_test_... or sk_live_)
+1. Database migrations must be applied in Neon SQL Editor:
+   - `db/schema.sql` - initial schema (admin_users, applications, enquiries, content tables, rate_limits, audit_log)
+   - `db/migration_admin_users.sql` - admin_users table
+   - `db/migration_admin_enhancements.sql` - updated_at, reply tracking, audit log extensions
+   - `db/migration_security.sql` - login_attempts and login_lockouts tables
+
+2. Seed admin users:
+   - `scripts/seed_admin_users.js` - seeds users from `ADMIN_EMAILS` env var with `DEFAULT_ADMIN_PASSWORD`
+
+3. In Vercel project settings, add these Environment Variables:
+   - `DATABASE_URL` - Neon connection string
+   - `JWT_SECRET` - secret for signing JWT tokens
+   - `RATE_LIMIT_SALT` - salt for hashing IP addresses in rate limiting
    - `ADMIN_EMAILS` (comma-separated, e.g. `joanna@example.com,staff@example.com`)
-   - `DATABASE_URL`, `RATE_LIMIT_SALT` (see README)
-7. In Clerk Dashboard → **Domains**, add your Vercel preview/production domains
-8. Redeploy. Visit `/admin` → redirects to Clerk sign-in → on success, shows admin dashboard.
+   - `DEFAULT_ADMIN_PASSWORD` (optional, defaults to `ChangeMe123!`)
+   - `RESEND_API_KEY` (optional, for enquiry reply emails)
+   - `REPLY_FROM_EMAIL` (optional, for enquiry reply emails)
 
-### Adding/removing staff
+4. Redeploy. Visit `/admin` → sign in with seeded credentials → shows admin dashboard.
 
-- **Add**: Add email to `ADMIN_EMAILS` in Vercel env vars → redeploy (or wait for next deploy). User signs in with that email.
-- **Remove**: Remove email from `ADMIN_EMAILS` → redeploy. Existing sessions work until token expires (max session lifetime).
+### Default credentials (change on first login)
+
+- `jasonasare211@gmail.com` / `ChangeMe123!`
+- `joannylove44@gmail.com` / `ChangeMe123!`
 
 ## Admin screens
 
-All in the site's black and gold style, mobile-friendly:
+All in the site's black and gold style, mobile-friendly with collapsible left sidebar:
 
-- **Dashboard** (top): real counts — total applications, per status (submitted/under review/accepted/rejected), fees received, total enquiries, new enquiries. Shows 0 when empty.
-- **Applications**: searchable, filterable by status. Click "View" to open modal with all details. Can change status, toggle fee_received, edit admin_notes. Reference number shown.
-- **Enquiries**: searchable, filterable by status. Click "View" to open modal. Can mark as read/replied.
+- **Dashboard** (top): real counts — total applications, per status (submitted/under review/accepted/rejected), fees received, total enquiries, new enquiries, programmes, gallery items, achievements. Shows 0 when empty.
+- **Applications**: searchable, filterable by status. Click to open modal with all details. Can change status, toggle fee_received, edit admin_notes. Reference number shown.
+- **Enquiries**: searchable, filterable by status. Click to open modal. Can mark as read/replied, send reply email (if Resend configured).
+- **Content**: Manage programmes, gallery_items, and achievements. Create, edit, delete content items.
 - **Audit trail**: every status/fee change recorded in `audit_log` table (who, what, when).
 
 ## API routes (protected)
 
+All require `Authorization: Bearer <JWT>` header and CSRF token for state-changing methods:
+
+- `POST /api/admin/login` — authenticate, returns JWT + sets CSRF cookie
 - `GET /api/admin/stats` — dashboard counts
 - `GET /api/admin/applications` — list all
 - `PATCH /api/admin/applications/:id` — update status, fee_received, admin_notes (validated)
 - `GET /api/admin/enquiries` — list all
-- `PATCH /api/admin/enquiries/:id` — update status (validated)
+- `PATCH /api/admin/enquiries/:id` — update status, reply_subject, reply_body (validated)
+- `GET /api/admin/content/:table` — list content (programmes, gallery_items, achievements)
+- `POST /api/admin/content/:table` — create content item
+- `PATCH /api/admin/content/:table/:id` — update content item
+- `DELETE /api/admin/content/:table/:id` — delete content item
+- `GET /api/admin/audit` — audit log entries
 
-All use parameterized queries, allow-listed values, length limits.
-
-## Next step: email notification
-
-**Not yet implemented.** When an application arrives, send an email to the owner. Options:
-- Resend / SendGrid / Postmark via Vercel Function
-- Clerk webhook on user creation (not applicable here)
-- Direct SMTP from `/api/application` after successful insert
-
-Add this in a future phase.
+All use parameterized queries, allow-listed values, length limits, and request body size limits.
 
 ## Security rules kept
 
@@ -68,7 +73,9 @@ Add this in a future phase.
 - Validated inputs against allow-lists
 - Length limits on all text fields
 - No secrets in browser code
-- Rate limiting on public forms (DB-backed, hashed IP)
+- Rate limiting on public forms and admin login (DB-backed, hashed IP)
+- CSRF double-submit cookie protection on state-changing admin requests
+- XSS sanitization on all user-submitted content rendered in admin panel
 - Audit trail for sensitive changes
 - `X-Robots-Tag: noindex` on `/admin/*` via `vercel.json`
-- `Disallow: /admin` in `robots.txt`
+- `X-Frame-Options: DENY`, `Strict-Transport-Security`, `Content-Security-Policy`, `Permissions-Policy` headers

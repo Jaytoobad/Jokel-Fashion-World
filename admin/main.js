@@ -11,11 +11,11 @@ function fmtDate(d) {
 
 function escapeHtml(s) {
   return String(s ?? '')
-    .replace(/&/g, '&')
-    .replace(/</g, '<')
-    .replace(/>/g, '>')
-    .replace(/"/g, '"')
-    .replace(/'/g, '&apos;');
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
 }
 
 function getToken() {
@@ -119,13 +119,14 @@ async function loadTab(name) {
 async function loadDashboard() {
   try {
     const data = await apiFetch('/api/admin/stats');
-    $('#stat-apps').textContent = data.applications ?? 0;
-    $('#stat-apps-new').textContent = data.applications_new ?? 0;
-    $('#stat-enqs').textContent = data.enquiries ?? 0;
-    $('#stat-enqs-new').textContent = data.enquiries_new ?? 0;
-    $('#stat-programmes').textContent = data.programmes ?? 0;
-    $('#stat-gallery').textContent = data.gallery_items ?? 0;
-    $('#stat-achievements').textContent = data.achievements ?? 0;
+    const s = data.stats || data;
+    $('#stat-apps').textContent = s.totalApplications ?? 0;
+    $('#stat-apps-new').textContent = s.submitted ?? 0;
+    $('#stat-enqs').textContent = s.totalEnquiries ?? 0;
+    $('#stat-enqs-new').textContent = s.newEnquiries ?? 0;
+    $('#stat-programmes').textContent = s.programmes ?? 0;
+    $('#stat-gallery').textContent = s.gallery_items ?? 0;
+    $('#stat-achievements').textContent = s.achievements ?? 0;
   } catch (e) {
     showToast('Failed to load dashboard: ' + e.message, true);
   }
