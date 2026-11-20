@@ -65,12 +65,19 @@ async function apiFetch(path, options = {}) {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
+      if (res.status === 401) {
+        clearAuth();
+        showToast('Session expired. Please sign in again.', true);
+        setTimeout(() => location.reload(), 1500);
+        throw new Error('Session expired');
+      }
       const err = new Error(data.error || ('HTTP ' + res.status));
       err.status = res.status;
       throw err;
     }
     return data;
   } catch (e) {
+    if (e.message === 'Session expired') throw e;
     if (e instanceof TypeError || (e.message && e.message.includes('fetch'))) {
       throw new Error('Network error. Please check your connection and try again.');
     }
