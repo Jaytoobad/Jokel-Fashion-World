@@ -142,11 +142,11 @@ tr:hover td{background:var(--bg2)}
 
 /* ===== MOBILE ===== */
 @media(max-width:900px){
-  .adm-toggle{display:flex;align-items:center;justify-content:center;width:44px;height:44px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;color:var(--ink);cursor:pointer;z-index:60;position:fixed;top:16px;left:16px}
-  .adm-toggle-bar{display:block;width:22px;height:2px;background:currentColor;margin:5px 0;border-radius:2px;transition:transform .3s,opacity .3s}
-  .adm-toggle.active .adm-toggle-bar:nth-child(1){transform:translateY(7px) rotate(45deg)}
+  .adm-toggle{display:flex;align-items:center;justify-content:center;width:44px;height:44px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;color:var(--ink);cursor:pointer;z-index:60;position:fixed;top:16px;right:16px}
+  .adm-toggle-bar{display:block;width:26px;height:3px;background:currentColor;margin:6px 0;border-radius:2px;transition:transform .3s,opacity .3s}
+  .adm-toggle.active .adm-toggle-bar:nth-child(1){transform:translateY(9px) rotate(45deg)}
   .adm-toggle.active .adm-toggle-bar:nth-child(2){opacity:0}
-  .adm-toggle.active .adm-toggle-bar:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+  .adm-toggle.active .adm-toggle-bar:nth-child(3){transform:translateY(-9px) rotate(-45deg)}
   
   .adm-backdrop{position:fixed;inset:0;z-index:45;background:rgba(0,0,0,.5);opacity:0;visibility:hidden;transition:opacity .3s,visibility 0s .3s;backdrop-filter:blur(4px)}
   .adm-backdrop.open{opacity:1;visibility:visible;transition-delay:0s}
@@ -190,6 +190,10 @@ tr:hover td{background:var(--bg2)}
     display: flex;
     align-items: center;
     justify-content: center;
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 60;
   }
 
   /* Sidebar touch targets */
