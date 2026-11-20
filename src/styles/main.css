@@ -550,3 +550,329 @@ code{font-family:monospace;background:var(--bg2);padding:2px 6px;border-radius:4
 
 @media(min-width:901px){.about-founder{position:sticky;top:120px}}
 
+/* ===== MOBILE RESPONSIVENESS IMPROVEMENTS ===== */
+/* Touch targets: minimum 44px for all interactive elements on mobile */
+@media (max-width: 820px) {
+  body {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    overflow-x: hidden;
+  }
+
+  /* Header / nav on mobile */
+  header {
+    padding: 14px clamp(16px, 4vw, 32px);
+  }
+
+  .burger {
+    padding: 10px;
+    min-height: 44px;
+    min-width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  nav.open {
+    width: min(92vw, 420px);
+    height: min(85vh, 520px);
+    padding: 40px 24px;
+    border-radius: 20px;
+    margin: 0 env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
+  }
+
+  nav a {
+    font-size: 1.8rem;
+    padding: 14px 0;
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* Hero section on mobile */
+  .hero {
+    padding: 110px 0 40px;
+    min-height: 100svh;
+  }
+
+  .hero h1 {
+    font-size: clamp(2rem, 9vw, 3.5rem);
+    line-height: 1.1;
+  }
+
+  .hero p {
+    font-size: 1rem;
+    max-width: 90%;
+    line-height: 1.5;
+  }
+
+  .hero .btn {
+    width: 100%;
+    max-width: 280px;
+    padding: 16px 24px;
+    font-size: 0.8rem;
+    text-align: center;
+  }
+
+  /* Two-column sections collapse gracefully */
+  .two {
+    gap: clamp(24px, 5vw, 40px);
+  }
+
+  .two .ph {
+    aspect-ratio: 4/5;
+    min-height: 300px;
+  }
+
+  /* Mosaic gallery on mobile */
+  .mos {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .mos .t {
+    min-height: 320px !important;
+    grid-column: span 1 !important;
+  }
+
+  .mos .t .ph {
+    transform: none !important;
+  }
+
+  .mos .t:hover .ph {
+    transform: scale(1.03);
+  }
+
+  .cap {
+    font-size: 1.25rem;
+    padding: 18px;
+  }
+
+  /* List items */
+  .lst > * {
+    grid-template-columns: 40px 1fr;
+    gap: 16px;
+    padding: 20px 0;
+  }
+
+  .lst .tag {
+    grid-column: 2;
+    white-space: normal;
+    text-align: center;
+    margin-top: 8px;
+  }
+
+  /* Forms on mobile */
+  form {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-top: 20px;
+  }
+
+  label {
+    font-size: 0.7rem;
+    gap: 6px;
+  }
+
+  input, select, textarea {
+    font-size: 1rem !important;
+    padding: 14px 0;
+  }
+
+  /* Prevent iOS zoom on input focus */
+  input, select, textarea {
+    font-size: 16px;
+  }
+
+  .note {
+    padding: 14px 16px;
+    font-size: 0.85rem;
+  }
+
+  /* Lightbox on mobile */
+  .lb {
+    padding: 12px;
+  }
+
+  .lb .ph {
+    width: min(95vw, 640px);
+    max-height: 75vh;
+    border-radius: 12px;
+  }
+
+  .lb button {
+    top: env(safe-area-inset-top, 12px);
+    right: 12px;
+    font-size: 0.7rem;
+    padding: 8px;
+  }
+
+  .lb p {
+    bottom: env(safe-area-inset-bottom, 24px);
+    font-size: 1.2rem;
+    text-align: center;
+    left: 0;
+    right: 0;
+    padding: 0 20px;
+  }
+
+  /* Footer on mobile */
+  footer {
+    padding: 60px 0 30px;
+  }
+
+  footer .g4 {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  footer a {
+    font-size: 0.9rem;
+    padding: 6px 0;
+    display: block;
+  }
+
+  footer small {
+    margin-top: 40px;
+    font-size: 0.7rem;
+    text-align: center;
+    padding: 0 20px;
+  }
+
+  /* Stats on mobile */
+  .steps {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin: 30px 0;
+  }
+
+  .steps div {
+    padding: 20px 18px;
+  }
+
+  .steps b {
+    font-size: 1.3rem;
+  }
+
+  /* About page mobile */
+  .about-hero {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .about-title {
+    font-size: clamp(2rem, 8vw, 3rem);
+  }
+
+  .about-intro {
+    font-size: 1rem;
+  }
+
+  .about-founder-media {
+    max-width: 320px;
+    margin: 0 auto;
+    aspect-ratio: 4/5;
+    border-radius: 12px;
+  }
+
+  .about-founder-name {
+    font-size: 1.2rem;
+  }
+
+  .about-values {
+    margin-top: 32px;
+  }
+
+  /* Video row on mobile */
+  .vrow {
+    grid-template-columns: 1fr;
+    padding: 32px 0;
+    gap: 24px;
+  }
+
+  .vrow > div:first-child {
+    position: static;
+  }
+
+  .vrow .sub {
+    font-size: clamp(1.3rem, 4vw, 1.8rem);
+    margin-bottom: 18px;
+  }
+
+  /* cmo column layout */
+  .cmo ol {
+    columns: 1;
+  }
+
+  /* Prevent horizontal scroll */
+  .w, .hero .w {
+    overflow-x: hidden;
+  }
+
+  table, .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Focus visibility on mobile */
+  button:focus-visible, a:focus-visible, input:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
+}
+
+/* Extra small phones (iPhone SE etc.) */
+@media (max-width: 480px) {
+  .hero h1 {
+    font-size: clamp(1.8rem, 8vw, 2.8rem);
+  }
+
+  .hero p {
+    font-size: 0.95rem;
+  }
+
+  .about-title {
+    font-size: clamp(1.8rem, 7vw, 2.5rem);
+  }
+
+  .about-founder-media {
+    max-width: 280px;
+  }
+
+  footer .g4 {
+    gap: 24px;
+  }
+
+  .mos .t {
+    min-height: 280px !important;
+  }
+
+  .cap {
+    font-size: 1.1rem;
+    padding: 16px;
+  }
+
+  .stat {
+    padding: 18px 14px;
+  }
+
+  .stat-val {
+    font-size: 2rem;
+  }
+}
+
+/* Large phones / small tablets */
+@media (min-width: 481px) and (max-width: 820px) {
+  .hero h1 {
+    font-size: clamp(2.2rem, 8vw, 4rem);
+  }
+
+  .steps {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .about-founder-media {
+    max-width: 340px;
+  }
+}
+
