@@ -190,8 +190,6 @@ em{font-style:normal;color:var(--gold)}
 
 #pb{position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;height:2px;background:var(--gold);transform:scaleX(0);transform-origin:left;z-index:70}
 
-.rip{position:fixed;width:12px;height:12px;border:1px solid var(--gold);border-radius:50%;pointer-events:none;z-index:90;transform:translate(-50%,-50%);animation:rip .7s forwards}@keyframes rip{to{width:90px;height:90px;opacity:0}}
-
 @media(prefers-reduced-motion:reduce){.mos .t .ph{transform:none!important}nav a{opacity:1;transform:none}#pb{display:none}}
 
 .btn{isolation:isolate;--f:var(--ink);--t:var(--bg)}
