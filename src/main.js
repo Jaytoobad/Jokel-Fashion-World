@@ -38,7 +38,21 @@ admissions:()=>`<section class="sec" style="padding-top:170px"><div class="w"><d
 <div class="f"><button class="btn g" type="submit">Submit Application</button></div><div class="note f" id="fm" hidden role="status"></div></form></div></section>`,
 designs:()=>`<section class="sec" style="padding-top:170px"><div class="w">${head("Fashion House","The portfolio","Selected designs by Jokel Fashion World.")}${grid(C.designs,"d")}<div class="row rv"><a class="btn g" href="/contact">Enquire About a Custom Design</a></div></div></section>`,
 students:()=>`<section class="sec" style="padding-top:170px"><div class="w">${head("Student Showcase","Made in our studio","Student names appear only with approval.")}${grid(C.students,"s")}</div></section>`,
-achievements:()=>`<section class="sec" style="padding-top:170px"><div class="w">${head("Achievements","Milestones & recognition")}${C.achievements.length ? `<div class="lst">${C.achievements.map(a=>`<div class="rv"><span class="n">${a[0]}</span><span>${a[1]}${a[3]?`<a class="lnk" href="${a[3]}" target="_blank" rel="noopener">Read the feature ↗</a>`:""}</span><span class="tag">${a[2]}</span></div>`).join("")}</div>` : '<p style="color:var(--mut);max-width:56ch">No achievements to display yet.</p>'}</div></section>`,
+achievements:()=>{
+  var itemsHtml = "";
+  if (C.achievements.length > 1) {
+    C.achievements.slice(1).forEach(function(a){
+      var link = a[3] ? '<a class="lnk" href="'+a[3]+'" target="_blank" rel="noopener">Read the feature ↗</a>' : "";
+      itemsHtml += '<div class="rv"><span class="n">'+a[0]+'</span><span>'+a[1]+link+'</span><span class="tag">'+a[2]+'</span></div>';
+    });
+  }
+  var headerHtml = "";
+  if (C.achievements.length) {
+    headerHtml = '<div style="margin-top:32px"><div class="about-founder-media">'+ph("event",0,"","Fashion Showcase Awards 2026 flyer")+'</div><div style="margin-top:16px"><span class="eye rv">Featured event</span><h3 class="rv" style="font-size:clamp(1.6rem,3vw,2rem)">'+C.achievements[0][1]+'</h3></div></div>';
+  }
+  var listHtml = itemsHtml ? '<div class="lst" style="margin-top:48px">'+itemsHtml+'</div>' : "";
+  return '<section class="sec" style="padding-top:170px"><div class="w">'+head("Achievements","Milestones & recognition")+headerHtml+listHtml+'</div></section>';
+},
 contact:()=>`<section class="sec" style="padding-top:170px"><div class="w two" style="align-items:start"><div>${head("Contact","Let's talk")}<dl class="rv" style="margin-top:32px"><dt>Phone</dt><dd><a href="tel:+233556213555">${C.contact.phone}</a></dd><dt>Email</dt><dd><a href="mailto:${C.contact.email}">${C.contact.email}</a></dd><dt>Location</dt><dd>${C.contact.location}</dd></dl><a class="btn rv" style="margin-top:24px" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Better%20Future%20Academy%20Achiaman%20Ghana">Open in Google Maps</a></div>
 <form id="cf" novalidate class="rv" style="margin-top:0"><label class="f">Name<input name="name" required></label><label class="f">Email<input name="email" type="email" required></label><label class="f">Enquiry type<select name="enquiry_type" required><option value="">Select…</option><option value="admissions">Admissions</option><option value="custom_design">Custom design / business</option><option value="general">General</option></select></label><label class="f">Message<textarea name="message" rows="4" required></textarea></label><input type="hidden" name="website" value="" tabindex="-1" autocomplete="off"><div class="f"><button class="btn g" type="submit">Send Message</button></div><div class="note f" id="cm" hidden role="status"></div></form></div></section>`
 };
