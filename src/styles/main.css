@@ -517,7 +517,7 @@ code{font-family:monospace;background:var(--bg2);padding:2px 6px;border-radius:4
 
 .about-founder{margin:0;display:grid;gap:16px;align-content:start}
 
-.about-founder-media .ph{aspect-ratio:4/5;min-height:300px}
+.about-founder-media .ph{aspect-ratio:4/5;width:min(500px,100%);min-height:300px;margin:0 auto}
 
 .about-founder-cap{display:grid;gap:4px}
 
