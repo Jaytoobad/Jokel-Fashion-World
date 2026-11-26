@@ -62,7 +62,7 @@ header.open .logo,header.open .burger{color:var(--invt)}
 
 .row{display:flex;gap:14px;flex-wrap:wrap;margin-top:32px}
 
-.hero{min-height:100svh;display:grid;align-items:end;position:relative;background:var(--inv);color:var(--invt);overflow:hidden;padding:130px 0 60px}
+.hero{min-height:100svh;display:grid;align-items:end;position:relative;background:var(--inv);color:var(--invt);overflow:hidden;padding:130px 0 60px;opacity:1;visibility:visible}
 
 .hero .ph{position:absolute;inset:-6% 0;opacity:.85}
 
@@ -82,7 +82,7 @@ header.open .logo,header.open .burger{color:var(--invt)}
 
 .scr::after{content:"";display:block;width:1px;height:50px;background:var(--gold);margin:10px auto 0}
 
-.ph{background:linear-gradient(155deg,hsl(var(--h) 22% 30%),hsl(calc(var(--h) + 24) 30% 14%));background-size:cover;background-position:center;position:relative;overflow:hidden}
+.ph{background-size:cover;background-position:center;position:relative;overflow:hidden}
 
 .ph::after{content:attr(data-l);position:absolute;left:14px;bottom:12px;font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:#f6f1e9aa}
 
