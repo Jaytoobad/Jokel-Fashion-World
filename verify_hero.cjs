@@ -18,19 +18,17 @@ async function run() {
     return;
   }
   const jsPath = jsMatch[0].match(/src="([^"]*)"/)[1];
-  console.log('JS file:', jsPath);
-  
   const js = await request(jsPath);
   
   console.log('JS length:', js.body.length);
+  console.log('Has design-07.jpg:', js.body.includes('design-07.jpg'));
   console.log('Has owner.jpg:', js.body.includes('owner.jpg'));
-  console.log('Has owner.jpg img tag:', js.body.includes('<img src="/images/owner.jpg"'));
   console.log('Has ph("hero":', js.body.includes('ph("hero"'));
   
-  // Show context around owner.jpg
-  const idx = js.body.indexOf('owner.jpg');
+  // Check for the actual img tag with design-07
+  const idx = js.body.indexOf('design-07');
   if (idx >= 0) {
-    console.log('\nContext around owner.jpg:');
+    console.log('\nContext around design-07:');
     console.log(js.body.substring(Math.max(0, idx-200), idx+100));
   }
 }
