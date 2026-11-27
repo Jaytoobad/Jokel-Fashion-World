@@ -10,9 +10,9 @@ const note=(t)=>`<div class="note">${t}</div>`;
 
 const R={
 home:()=>`<section class="hero">${ph("hero",2,"","Ruffle-shoulder red gown by Jokel Fashion World")}<div class="w"><span class="eye">Fashion House & Academy</span>
-<h1>Jokel Fashion World</h1>
-<p style="margin-top:28px">Jokel Fashion World is a fashion house and fashion academy — designing garments and developing the next generation of creative talent.</p>
-<div class="row"><a class="btn g" href="/academy">Explore the Fashion School</a><a class="btn" href="/designs">Discover Our Designs</a><a class="btn" href="/admissions">Apply Now</a></div></div></section>
+<h1><span class="ln"><span>Where Creativity</span></span><span class="ln"><span>Meets Craftsmanship</span></span></h1>
+<p style="margin-top:28px">Jokel Fashion World is a fashion house and a fashion academy — designing garments and developing the next generation of creative talent.</p>
+<div class="row"><a class="btn g" href="/academy">Explore the Fashion School</a><a class="btn" href="/designs">Discover Our Designs</a><a class="btn" href="/admissions">Apply Now</a></div></div><div class="scr">Scroll</div></section>
 <section class="sec"><div class="w two"><div>${head("The House","Design and education, under one roof","Jokel Fashion World brings together professional fashion design and the development of emerging creative talent.")}<div class="row rv"><a class="btn" href="/about">Our Story</a></div></div>${ph("intro",1,"","Beaded red lace gown by Jokel Fashion World")}</div></section>
 <section class="sec alt"><div class="w">${head("The Academy","Learn the craft","A 6-month beginner course: from first stitch to a complete outfit.")}
 <div class="lst">${C.curriculum.map((c,i)=>`<div class="rv"><span class="n">0${i+1}</span><span style="font-family:var(--serif);font-size:1.7rem">${c[0]}</span><span class="tag">Month ${i+1}</span></div>`).join("")}</div>
