@@ -292,9 +292,10 @@ function renderApplications() {
 function attachSelectAll(selectAllId, tableKey) {
   const cb = $('#' + selectAllId);
   if (!cb) return;
+  const tbodyId = { applications: 'apps', enquiries: 'enqs', content: 'content', users: 'users', settings: 'settings' }[tableKey];
   cb.onclick = () => {
     const checked = cb.checked;
-    const visibleIds = $$(`#${tableKey === 'applications' ? 'apps' : tableKey === 'enquiries' ? 'enqs' : 'content'}-tbody tr[data-id]`).map(tr => tr.dataset.id);
+    const visibleIds = $$(`#${tbodyId}-tbody tr[data-id]`).map(tr => tr.dataset.id);
     if (checked) {
       visibleIds.forEach(id => bulkSelections[tableKey].add(id));
     } else {
@@ -313,12 +314,18 @@ function attachRowClicks(prefix) {
       if (prefix === 'apps') openApplicationDialog(tr.dataset.id);
       else if (prefix === 'enqs') openEnquiryDialog(tr.dataset.id);
       else if (prefix === 'content') openContentDialog(tr.dataset.id.split('|')[0], tr.dataset.id.split('|')[1]);
+      else if (prefix === 'users') openUserDialog(tr.dataset.id);
+      else if (prefix === 'settings') {
+        const s = settingsCache.find(x => x.key === tr.dataset.id);
+        editSetting(tr.dataset.id, s ? JSON.stringify(s.value) : '');
+      }
     });
     cb?.addEventListener('click', (e) => {
       e.stopPropagation();
       const id = tr.dataset.id;
-      if (cb.checked) bulkSelections[prefix === 'apps' ? 'applications' : prefix === 'enqs' ? 'enquiries' : 'content'].add(id);
-      else bulkSelections[prefix === 'apps' ? 'applications' : prefix === 'enquiries' ? 'enquiries' : 'content'].delete(id);
+      const tableKey = prefix === 'apps' ? 'applications' : prefix === 'enquiries' ? 'enquiries' : prefix === 'content' ? 'content' : prefix === 'users' ? 'users' : 'settings';
+      if (cb.checked) bulkSelections[tableKey].add(id);
+      else bulkSelections[tableKey].delete(id);
       tr.classList.toggle('selected', cb.checked);
       updateBulkBar();
     });
@@ -329,14 +336,16 @@ function renderTable(tableKey) {
   if (tableKey === 'applications') renderApplications();
   else if (tableKey === 'enquiries') renderEnquiries();
   else if (tableKey === 'content') renderContentTable(currentContentTable);
+  else if (tableKey === 'users') renderUsers();
+  else if (tableKey === 'settings') renderSettings();
 }
 
 function updateBulkBar() {
-  const tableKey = currentTab === 'applications' ? 'applications' : currentTab === 'enquiries' ? 'enquiries' : 'content';
+  const tableKey = currentTab === 'applications' ? 'applications' : currentTab === 'enquiries' ? 'enquiries' : currentTab === 'content' ? 'content' : currentTab === 'users' ? 'users' : 'settings';
   const count = bulkSelections[tableKey].size;
-  const bar = currentTab === 'applications' ? $('#app-bulk-bar') : currentTab === 'enquiries' ? $('#enq-bulk-bar') : $('#content-bulk-bar');
-  const countEl = currentTab === 'applications' ? $('#app-bulk-count') : currentTab === 'enquiries' ? $('#enq-bulk-count') : $('#content-bulk-count');
-  const delBtn = currentTab === 'applications' ? $('#app-delete-selected') : currentTab === 'enquiries' ? $('#enq-delete-selected') : $('#content-delete-selected');
+  const bar = currentTab === 'applications' ? $('#app-bulk-bar') : currentTab === 'enquiries' ? $('#enq-bulk-bar') : currentTab === 'content' ? $('#content-bulk-bar') : currentTab === 'users' ? $('#users-bulk-bar') : $('#settings-bulk-bar');
+  const countEl = currentTab === 'applications' ? $('#app-bulk-count') : currentTab === 'enquiries' ? $('#enq-bulk-count') : currentTab === 'content' ? $('#content-bulk-count') : currentTab === 'users' ? $('#users-bulk-count') : $('#settings-bulk-count');
+  const delBtn = currentTab === 'applications' ? $('#app-delete-selected') : currentTab === 'enquiries' ? $('#enq-delete-selected') : currentTab === 'content' ? $('#content-delete-selected') : currentTab === 'users' ? null : $('#settings-delete-selected');
 
   if (bar) bar.hidden = count === 0;
   if (countEl) countEl.textContent = count;
@@ -900,6 +909,16 @@ async function bulkAction(tableKey, action) {
           method: 'PATCH', body: JSON.stringify({ published: newPublished })
         });
       }
+    } else if (tableKey === 'users') {
+      // users bulk deactivate
+      for (const id of ids) {
+        await apiFetch('/api/admin/users/' + id, { method: 'DELETE' });
+      }
+    } else if (tableKey === 'settings') {
+      // settings bulk delete
+      for (const id of ids) {
+        await apiFetch('/api/admin/settings/' + id, { method: 'DELETE' });
+      }
     }
     showToast('Bulk action completed');
     bulkSelections[tableKey].clear();
@@ -1068,7 +1087,7 @@ function renderSettingsFiltered(q) {
 }
 
 async function editSetting(key, currentValue) {
-  const dialog = $('#user-dialog');
+  const dialog = $('#settings-dialog');
   dialog.innerHTML = `
     <h2>Edit Setting: ${escapeHtml(key)}</h2>
     <button class="dialog-close" aria-label="Close">&times;</button>
@@ -1344,7 +1363,6 @@ function wireEvents() {
   $('#enq-search')?.addEventListener('input', e => { enqSearch = e.target.value; enqsPage = 1; renderEnquiries(); });
   $('#settings-search')?.addEventListener('input', e => {
     const q = e.target.value.toLowerCase();
-    settingsCache.filter(s => s.key.toLowerCase().includes(q));
     renderSettingsFiltered(q);
   });
   // Create content
@@ -1362,6 +1380,12 @@ function wireEvents() {
   });
   $$('[id^="content-bulk-"]').forEach(btn => {
     btn.onclick = () => bulkAction('content', btn.id.replace('content-bulk-', ''));
+  });
+  $$('[id^="users-bulk-"]').forEach(btn => {
+    btn.onclick = () => bulkAction('users', btn.id.replace('users-bulk-', ''));
+  });
+  $$('[id^="settings-bulk-"]').forEach(btn => {
+    btn.onclick = () => bulkAction('settings', btn.id.replace('settings-bulk-', ''));
   });
   // Delete selected buttons
   $('#app-delete-selected')?.addEventListener('click', async () => {
@@ -1404,6 +1428,34 @@ function wireEvents() {
     bulkSelections.content.clear();
     updateBulkBar();
     await loadContentTable(currentContentTable);
+    loadDashboard();
+  });
+  $('#users-delete-selected')?.addEventListener('click', async () => {
+    const ids = Array.from(bulkSelections.users);
+    if (ids.length === 0) return;
+    const ok = await confirmDialog('Deactivate users', 'Deactivate ' + ids.length + ' selected user' + (ids.length > 1 ? 's' : '') + '?', 'Deactivate', 'Cancel', 'Deactivate');
+    if (!ok) return;
+    for (const id of ids) {
+      try { await apiFetch('/api/admin/users/' + id, { method: 'DELETE' }); } catch {}
+    }
+    showToast('Deactivated ' + ids.length + ' user' + (ids.length > 1 ? 's' : ''));
+    bulkSelections.users.clear();
+    updateBulkBar();
+    await loadUsers();
+    loadDashboard();
+  });
+  $('#settings-delete-selected')?.addEventListener('click', async () => {
+    const ids = Array.from(bulkSelections.settings);
+    if (ids.length === 0) return;
+    const ok = await confirmDialog('Delete settings', 'Delete ' + ids.length + ' selected setting' + (ids.length > 1 ? 's' : '') + '?', 'Delete', 'Cancel', 'Delete');
+    if (!ok) return;
+    for (const id of ids) {
+      try { await apiFetch('/api/admin/settings/' + id, { method: 'DELETE' }); } catch {}
+    }
+    showToast('Deleted ' + ids.length + ' setting' + (ids.length > 1 ? 's' : ''));
+    bulkSelections.settings.clear();
+    updateBulkBar();
+    await loadSettings();
     loadDashboard();
   });
 }

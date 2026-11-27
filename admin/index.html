@@ -135,19 +135,33 @@
       <!-- Users -->
       <section class="adm-sec" id="tab-users" hidden data-tab="users">
         <div class="adm-top"><div><h1>Admin Users</h1><p class="adm-sub">Manage admin accounts and access.</p></div><div class="adm-actions"><button class="btn g" id="user-create">Create User</button></div></div>
+        <div class="bulk-bar" id="users-bulk-bar" hidden>
+          <div class="bulk-info"><b id="users-bulk-count">0</b> selected</div>
+          <div class="bulk-actions">
+            <button class="btn small adm-btn-danger" id="users-bulk-deactivate">Deactivate</button>
+          </div>
+          <button class="bulk-close" id="users-bulk-close" aria-label="Clear selection">&times;</button>
+        </div>
         <div class="table-wrap">
-          <table><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Last Login</th><th>Created</th><th class="table-actions">Actions</th></tr></thead><tbody id="users-tbody"></tbody></table>
+          <table><thead><tr><th class="table-check"><input type="checkbox" id="users-select-all" aria-label="Select all"></th><th>Name</th><th>Email</th><th>Status</th><th>Last Login</th><th>Created</th><th class="table-actions">Actions</th></tr></thead><tbody id="users-tbody"></tbody></table>
         </div>
       </section>
 
       <!-- Settings -->
       <section class="adm-sec" id="tab-settings" hidden data-tab="settings">
-        <div class="adm-top"><div><h1>Site Settings</h1><p class="adm-sub">Manage site configuration key-value pairs.</p></div></div>
+        <div class="adm-top"><div><h1>Site Settings</h1><p class="adm-sub">Manage site configuration key-value pairs.</p></div><div class="adm-actions"><button class="btn small adm-btn-danger" id="settings-delete-selected" hidden>Delete selected</button></div></div>
         <div class="adm-tools">
           <input type="search" id="settings-search" placeholder="Search setting key... ( / )" aria-label="Search settings">
         </div>
+        <div class="bulk-bar" id="settings-bulk-bar" hidden>
+          <div class="bulk-info"><b id="settings-bulk-count">0</b> selected</div>
+          <div class="bulk-actions">
+            <button class="btn small adm-btn-danger" id="settings-bulk-delete">Delete</button>
+          </div>
+          <button class="bulk-close" id="settings-bulk-close" aria-label="Clear selection">&times;</button>
+        </div>
         <div class="table-wrap">
-          <table><thead><tr><th>Key</th><th>Value</th><th>Updated</th><th class="table-actions">Actions</th></tr></thead><tbody id="settings-tbody"></tbody></table>
+          <table><thead><tr><th class="table-check"><input type="checkbox" id="settings-select-all" aria-label="Select all"></th><th>Key</th><th>Value</th><th>Updated</th><th class="table-actions">Actions</th></tr></thead><tbody id="settings-tbody"></tbody></table>
         </div>
       </section>
     </main>
@@ -157,6 +171,7 @@
   <dialog id="enq-dialog" class="admin-dialog"></dialog>
   <dialog id="content-dialog" class="admin-dialog"></dialog>
   <dialog id="user-dialog" class="admin-dialog"></dialog>
+  <dialog id="settings-dialog" class="admin-dialog"></dialog>
   <dialog id="confirm-dialog" class="admin-dialog confirm-dialog"></dialog>
 
   <div id="toasts" aria-live="polite"></div>
