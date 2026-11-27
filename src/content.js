@@ -16,3 +16,15 @@ export const C={
 };
 
 export const PAGES=[["home","Home"],["about","About"],["academy","Academy"],["programmes","Programmes"],["admissions","Admissions"],["designs","Designs"],["students","Students"],["achievements","Achievements"],["contact","Contact"]];
+
+export const PAGE_META={
+ home:{title:"Jokel Fashion World — Fashion House & Academy",desc:"Fashion house and fashion academy in Amasaman, Ghana — designing garments and developing the next generation of creative talent."},
+ about:{title:"About — Jokel Fashion World",desc:"The story of Jokel Fashion World — where creativity meets craftsmanship. Our mission, founder Joana Amissah, and our fashion design and academy work."},
+ academy:{title:"Academy — Jokel Fashion World",desc:"Jokel Fashion Academy — a 6-month beginner course from first stitch to a complete outfit. Pattern drafting, cutting, sewing, corsetry, draping, kente and African fashion."},
+ programmes:{title:"Programmes — Jokel Fashion World",desc:"Jokel Fashion Academy programmes — 6-month beginner fashion design and dressmaking course with step-by-step month-by-month curriculum."},
+ admissions:{title:"Admissions — Jokel Fashion World",desc:"Apply to Jokel Fashion World fashion academy. Call about course fees, complete the application form, and pay fees in person."},
+ designs:{title:"Designs — Jokel Fashion World",desc:"Fashion house portfolio — selected designs by Jokel Fashion World including couture, evening, occasion, ready-to-wear, and editorial pieces."},
+ students:{title:"Students — Jokel Fashion World",desc:"Student showcase — work from the Jokel Fashion World studio. Student names appear only with approval."},
+ achievements:{title:"Achievements — Jokel Fashion World",desc:"Milestones and recognition — Jokel Fashion World fashion showcase awards, media features, and accomplishments."},
+ contact:{title:"Contact — Jokel Fashion World",desc:"Contact Jokel Fashion World in Achiaman, Ghana. Phone, email, location, and enquiry form for admissions, custom design, and general inquiries."}
+};

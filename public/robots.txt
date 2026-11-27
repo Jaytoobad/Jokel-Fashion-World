@@ -1,2 +1,4 @@
 User-agent: *
 Disallow: /admin
+
+Sitemap: https://jokel-fashion-world-sigma.vercel.app/sitemap.xml

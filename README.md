@@ -53,9 +53,9 @@ Everything visual: all nine pages, mobile menu, animations (respecting reduced m
 
 ## What does NOT work yet
 
-- **Hash routing** (`#about`) is not search-engine friendly. Real URLs, a sitemap and per-page metadata need a router.
+- **Hash routing** (`#about`) is not search-engine friendly. Real URLs, a sitemap and per-page metadata need a router. **Added:** `public/sitemap.xml` and per-page `<title>` + `<meta name="description">` per route. Sitemap referenced in `public/robots.txt`.
 - **No online payments, by the owner's decision.** Fees are discussed by phone and paid in person, so no payment code is needed.
-- **Email notification** to owner when an application arrives (next step, see `docs/ADMIN.md`).
+- **Email notification** to owner when an application arrives — code added to `api/application.js` (Resend), requires `RESEND_API_KEY` and `REPLY_FROM_EMAIL` env vars in Vercel to activate.
 
 ## How to test a submission
 
@@ -85,6 +85,8 @@ Everything visual: all nine pages, mobile menu, animations (respecting reduced m
    - `DATABASE_URL` (from Neon's connection string)
    - `RATE_LIMIT_SALT` (random string, e.g. `openssl rand -hex 32`)
    - `ADMIN_EMAILS` (comma-separated staff emails, e.g. `joanna@example.com,staff@example.com`)
+   - `RESEND_API_KEY` (optional, for application email notifications)
+   - `REPLY_FROM_EMAIL` (optional, sender email for notifications)
    - Clerk keys (see `docs/ADMIN.md`)
 4. Redeploy. The functions at `/api/enquiry`, `/api/application`, and `/api/admin/*` will now work.
 
