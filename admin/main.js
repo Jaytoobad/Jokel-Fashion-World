@@ -18,26 +18,17 @@ function escapeHtml(s) {
     .replace(/'/g, '&#x27;');
 }
 
-function getToken() {
-  return localStorage.getItem(AUTH_KEY);
-}
-
+function getToken() { return localStorage.getItem(AUTH_KEY); }
 function setToken(token, user) {
   localStorage.setItem(AUTH_KEY, token);
   localStorage.setItem(AUTH_USER, JSON.stringify(user));
 }
-
 function clearAuth() {
   localStorage.removeItem(AUTH_KEY);
   localStorage.removeItem(AUTH_USER);
 }
-
 function getUser() {
-  try {
-    return JSON.parse(localStorage.getItem(AUTH_USER) || 'null');
-  } catch {
-    return null;
-  }
+  try { return JSON.parse(localStorage.getItem(AUTH_USER) || 'null'); } catch { return null; }
 }
 
 async function apiFetch(path, options = {}) {
@@ -94,9 +85,46 @@ function showToast(msg, isError = false) {
   setTimeout(() => t.remove(), isError ? 6000 : 3500);
 }
 
+function setLoading(el, loading) {
+  if (!el) return;
+  if (loading) {
+    el.classList.add('loading');
+    el.disabled = true;
+    el.dataset._text = el.textContent;
+    el.textContent = '';
+  } else {
+    el.classList.remove('loading');
+    el.disabled = false;
+    el.textContent = el.dataset._text || el.textContent;
+  }
+}
+
+// --- Confirm dialog ---
+function confirmDialog(title, message, onConfirm, cancelLabel = 'Cancel', confirmLabel = 'Confirm') {
+  return new Promise((resolve) => {
+    const d = $('#confirm-dialog');
+    d.innerHTML = `
+      <h2>${escapeHtml(title)}</h2>
+      <button class="dialog-close" aria-label="Close">&times;</button>
+      <p class="confirm-message">${escapeHtml(message)}</p>
+      <div class="dialog-actions">
+        <button class="btn" id="confirm-cancel">${escapeHtml(cancelLabel)}</button>
+        <button class="btn g" id="confirm-ok">${escapeHtml(confirmLabel)}</button>
+      </div>
+    `;
+    d.showModal();
+    const close = () => { d.close(); resolve(false); };
+    $('#confirm-dialog .dialog-close').onclick = close;
+    $('#confirm-cancel').onclick = close;
+    $('#confirm-ok').onclick = () => { d.close(); resolve(true); };
+    d.addEventListener('close', () => { d.innerHTML = ''; }, { once: true });
+  });
+}
+
 // --- Tabs ---
 const TABS = ['dashboard', 'applications', 'enquiries', 'content', 'audit'];
 let currentTab = 'dashboard';
+let bulkSelections = { applications: new Set(), enquiries: new Set(), content: new Set() };
 
 function switchTab(name, opts = {}) {
   if (!TABS.includes(name)) name = 'dashboard';
@@ -108,6 +136,7 @@ function switchTab(name, opts = {}) {
     p.hidden = p.dataset.tab !== name;
   });
   if (!opts.skipLoad) loadTab(name);
+  updateBulkBar();
 }
 
 async function loadTab(name) {
@@ -131,14 +160,34 @@ async function loadDashboard() {
     grid.innerHTML = `
       <div class="stat"><div class="stat-val">${s.totalApplications ?? 0}</div><div class="stat-label">Total Applications</div></div>
       <div class="stat"><div class="stat-val">${s.submitted ?? 0}</div><div class="stat-label">New Applications</div></div>
+      <div class="stat"><div class="stat-val">${s.underReview ?? 0}</div><div class="stat-label">Under Review</div></div>
+      <div class="stat"><div class="stat-val">${s.accepted ?? 0}</div><div class="stat-label">Accepted</div></div>
+      <div class="stat"><div class="stat-val">${s.rejected ?? 0}</div><div class="stat-label">Rejected</div></div>
+      <div class="stat"><div class="stat-val">${s.feeReceived ?? 0}</div><div class="stat-label">Fees Received</div></div>
       <div class="stat"><div class="stat-val">${s.totalEnquiries ?? 0}</div><div class="stat-label">Total Enquiries</div></div>
       <div class="stat"><div class="stat-val">${s.newEnquiries ?? 0}</div><div class="stat-label">New Enquiries</div></div>
       <div class="stat"><div class="stat-val">${s.programmes ?? 0}</div><div class="stat-label">Programmes</div></div>
       <div class="stat"><div class="stat-val">${s.gallery_items ?? 0}</div><div class="stat-label">Gallery Items</div></div>
       <div class="stat"><div class="stat-val">${s.achievements ?? 0}</div><div class="stat-label">Achievements</div></div>
     `;
+    updateBadges(s);
   } catch (e) {
     showToast('Failed to load dashboard: ' + e.message, true);
+  }
+}
+
+function updateBadges(s) {
+  const appBadge = $('#badge-applications');
+  const enqBadge = $('#badge-enquiries');
+  if (appBadge) {
+    const count = (s.submitted ?? 0) + (s.underReview ?? 0);
+    appBadge.textContent = count;
+    appBadge.hidden = count === 0;
+  }
+  if (enqBadge) {
+    const count = s.newEnquiries ?? 0;
+    enqBadge.textContent = count;
+    enqBadge.hidden = count === 0;
   }
 }
 
@@ -146,35 +195,149 @@ async function loadDashboard() {
 let appsCache = [];
 let appsPage = 1;
 const APPS_PER_PAGE = 25;
+let appStatusFilter = '';
+let appSearch = '';
 
 async function loadApplications() {
   try {
     const data = await apiFetch('/api/admin/applications');
     appsCache = data.applications || [];
     appsPage = 1;
+    appStatusFilter = $('#app-status-filter') ? $('#app-status-filter').value : '';
     renderApplications();
+    renderAppChips();
   } catch (e) {
     showToast('Failed to load applications: ' + e.message, true);
   }
 }
 
+function renderAppChips() {
+  const container = $('#app-chips');
+  if (!container) return;
+  const statuses = [...new Set(appsCache.map(a => a.status).filter(Boolean))];
+  const allLabel = appStatusFilter ? 'All' : 'All';
+  container.innerHTML = `
+    <button class="chip${!appStatusFilter ? ' on' : ''}" data-status="">All (${appsCache.length})</button>
+    ${statuses.map(s => `
+      <button class="chip${appStatusFilter === s ? ' on' : ''}" data-status="${escapeHtml(s)}">${escapeHtml(s)} (${appsCache.filter(a => a.status === s).length})</button>
+    `).join('')}
+  `;
+  $$('#app-chips .chip').forEach(b => {
+    b.onclick = () => {
+      appStatusFilter = b.dataset.status || '';
+      $('#app-status-filter').value = appStatusFilter;
+      appsPage = 1;
+      renderApplications();
+      renderAppChips();
+    };
+  });
+}
+
+function filterApplications() {
+  const q = (appSearch || '').toLowerCase();
+  const s = appStatusFilter || '';
+  return appsCache.filter(a => {
+    const matchText = !q ||
+      String(a.full_name || '').toLowerCase().includes(q) ||
+      String(a.email || '').toLowerCase().includes(q) ||
+      String(a.reference || '').toLowerCase().includes(q) ||
+      String(a.programme_name || '').toLowerCase().includes(q);
+    const matchStatus = !s || a.status === s;
+    return matchText && matchStatus;
+  });
+}
+
 function renderApplications() {
+  const filtered = filterApplications();
   const start = (appsPage - 1) * APPS_PER_PAGE;
-  const pageItems = appsCache.slice(start, start + APPS_PER_PAGE);
+  const pageItems = filtered.slice(start, start + APPS_PER_PAGE);
   const tbody = $('#apps-tbody');
-  tbody.innerHTML = pageItems.map(a => `
-    <tr data-id="${a.id}">
-      <td>${escapeHtml(a.reference)}</td>
-      <td>${escapeHtml(a.programme_name)}</td>
-      <td>${escapeHtml(a.full_name)}</td>
-      <td>${escapeHtml(a.email)}</td>
-      <td>${escapeHtml(a.phone)}</td>
-      <td><span class="badge ${a.status}">${escapeHtml(a.status)}</span></td>
-      <td>${fmtDate(a.created_at)}</td>
-    </tr>
-  `).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--mut)">No applications</td></tr>';
-  $('#apps-pagination').innerHTML = renderPagination(appsCache.length, appsPage, APPS_PER_PAGE, 'apps');
+  const selectAll = $('#app-select-all');
+  const allSelected = pageItems.length > 0 && pageItems.every(a => bulkSelections.applications.has(a.id));
+
+  tbody.innerHTML = pageItems.map(a => {
+    const selected = bulkSelections.applications.has(a.id);
+    return `
+      <tr data-id="${a.id}" class="${selected ? 'selected' : ''}">
+        <td class="table-check"><input type="checkbox" class="row-select" data-id="${a.id}" ${selected ? 'checked' : ''} ${allSelected ? '' : ''}></td>
+        <td><code>${escapeHtml(a.reference)}</code></td>
+        <td>${escapeHtml(a.programme_name)}</td>
+        <td>${escapeHtml(a.full_name)}</td>
+        <td><a href="mailto:${escapeHtml(a.email)}">${escapeHtml(a.email)}</a></td>
+        <td><a href="tel:${escapeHtml(a.phone)}">${escapeHtml(a.phone)}</a></td>
+        <td><span class="badge ${escapeHtml(a.status)}">${escapeHtml(a.status)}</span></td>
+        <td>${a.fee_received ? '<span class="badge paid">Paid</span>' : '<span class="badge unpaid">Unpaid</span>'}</td>
+        <td>${fmtDate(a.created_at)}</td>
+        <td class="table-actions">
+          <div class="row-actions">
+            <button class="action-btn view" title="View" onclick="openApplicationDialog('${escapeHtml(a.id)}')">View</button>
+            <button class="action-btn edit" title="Edit" onclick="openApplicationDialog('${escapeHtml(a.id)}')">Edit</button>
+            <button class="action-btn delete" title="Delete" onclick="deleteApplication('${escapeHtml(a.id)}')">Delete</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('') || `<tr><td colspan="10" style="text-align:center;color:var(--mut)">No applications</td></tr>`;
+
+  $('#apps-pagination').innerHTML = renderPagination(filtered.length, appsPage, APPS_PER_PAGE, 'apps');
+  if (selectAll) selectAll.checked = allSelected;
   attachRowClicks('apps');
+  attachSelectAll('app-select-all', 'applications');
+  updateBulkBar();
+}
+
+function attachSelectAll(selectAllId, tableKey) {
+  const cb = $('#' + selectAllId);
+  if (!cb) return;
+  cb.onclick = () => {
+    const checked = cb.checked;
+    const visibleIds = $$(`#${tableKey === 'applications' ? 'apps' : tableKey === 'enquiries' ? 'enqs' : 'content'}-tbody tr[data-id]`).map(tr => tr.dataset.id);
+    if (checked) {
+      visibleIds.forEach(id => bulkSelections[tableKey].add(id));
+    } else {
+      visibleIds.forEach(id => bulkSelections[tableKey].delete(id));
+    }
+    renderTable(tableKey);
+    updateBulkBar();
+  };
+}
+
+function attachRowClicks(prefix) {
+  $$(`#${prefix}-tbody tr[data-id]`).forEach(tr => {
+    const cb = tr.querySelector('.row-select');
+    tr.addEventListener('click', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.closest('.row-actions')) return;
+      if (prefix === 'apps') openApplicationDialog(tr.dataset.id);
+      else if (prefix === 'enqs') openEnquiryDialog(tr.dataset.id);
+      else if (prefix === 'content') openContentDialog(tr.dataset.id.split('|')[0], tr.dataset.id.split('|')[1]);
+    });
+    cb?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = tr.dataset.id;
+      if (cb.checked) bulkSelections[prefix === 'apps' ? 'applications' : prefix === 'enqs' ? 'enquiries' : 'content'].add(id);
+      else bulkSelections[prefix === 'apps' ? 'applications' : prefix === 'enquiries' ? 'enquiries' : 'content'].delete(id);
+      tr.classList.toggle('selected', cb.checked);
+      updateBulkBar();
+    });
+  });
+}
+
+function renderTable(tableKey) {
+  if (tableKey === 'applications') renderApplications();
+  else if (tableKey === 'enquiries') renderEnquiries();
+  else if (tableKey === 'content') renderContentTable(currentContentTable);
+}
+
+function updateBulkBar() {
+  const tableKey = currentTab === 'applications' ? 'applications' : currentTab === 'enquiries' ? 'enquiries' : 'content';
+  const count = bulkSelections[tableKey].size;
+  const bar = currentTab === 'applications' ? $('#app-bulk-bar') : currentTab === 'enquiries' ? $('#enq-bulk-bar') : $('#content-bulk-bar');
+  const countEl = currentTab === 'applications' ? $('#app-bulk-count') : currentTab === 'enquiries' ? $('#enq-bulk-count') : $('#content-bulk-count');
+  const delBtn = currentTab === 'applications' ? $('#app-delete-selected') : currentTab === 'enquiries' ? $('#enq-delete-selected') : $('#content-delete-selected');
+
+  if (bar) bar.hidden = count === 0;
+  if (countEl) countEl.textContent = count;
+  if (delBtn) delBtn.hidden = count === 0;
 }
 
 function renderPagination(total, page, perPage, prefix) {
@@ -194,21 +357,6 @@ function renderPagination(total, page, perPage, prefix) {
   return html;
 }
 
-function attachRowClicks(prefix) {
-  $$(`#${prefix}-tbody tr[data-id]`).forEach(tr => {
-    tr.addEventListener('click', () => {
-      if (prefix === 'apps') openApplicationDialog(tr.dataset.id);
-      else if (prefix === 'enqs') openEnquiryDialog(tr.dataset.id);
-    });
-  });
-  $$(`#${prefix}-pagination button[data-page]`).forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (prefix === 'apps') { appsPage = +btn.dataset.page; renderApplications(); }
-      else if (prefix === 'enqs') { enqsPage = +btn.dataset.page; renderEnquiries(); }
-    });
-  });
-}
-
 // --- Applications Detail ---
 async function openApplicationDialog(id) {
   try {
@@ -219,15 +367,15 @@ async function openApplicationDialog(id) {
       <h2>Application ${escapeHtml(a.reference)}</h2>
       <button class="dialog-close" aria-label="Close">&times;</button>
       <div class="detail-grid">
-        <dt>Reference</dt><dd>${escapeHtml(a.reference)}</dd>
+        <dt>Reference</dt><dd><code>${escapeHtml(a.reference)}</code></dd>
         <dt>Programme</dt><dd>${escapeHtml(a.programme_name)}</dd>
         <dt>Full Name</dt><dd>${escapeHtml(a.full_name)}</dd>
-        <dt>Email</dt><dd>${escapeHtml(a.email)}</dd>
-        <dt>Phone</dt><dd>${escapeHtml(a.phone)}</dd>
-        <dt>Date of Birth</dt><dd>${a.date_of_birth ? fmtDate(a.date_of_birth) : ''}</dd>
-        <dt>Address</dt><dd>${escapeHtml(a.address || '')}</dd>
-        <dt>Education</dt><dd>${escapeHtml(a.education_background || '')}</dd>
-        <dt>Additional Info</dt><dd>${escapeHtml(a.additional_info || '')}</dd>
+        <dt>Email</dt><dd><a href="mailto:${escapeHtml(a.email)}">${escapeHtml(a.email)}</a></dd>
+        <dt>Phone</dt><dd><a href="tel:${escapeHtml(a.phone)}">${escapeHtml(a.phone)}</a></dd>
+        <dt>Date of Birth</dt><dd>${a.date_of_birth ? fmtDate(a.date_of_birth) : '—'}</dd>
+        <dt>Address</dt><dd>${escapeHtml(a.address || '—')}</dd>
+        <dt>Education</dt><dd>${escapeHtml(a.education_background || '—')}</dd>
+        <dt>Additional Info</dt><dd>${escapeHtml(a.additional_info || '—')}</dd>
         <dt>Status</dt><dd>
           <select id="app-status">
             <option value="submitted" ${a.status === 'submitted' ? 'selected' : ''}>Submitted</option>
@@ -236,18 +384,31 @@ async function openApplicationDialog(id) {
             <option value="rejected" ${a.status === 'rejected' ? 'selected' : ''}>Rejected</option>
           </select>
         </dd>
-        <dt>Fee Received</dt><dd>
-          <label class="check"><input type="checkbox" id="app-fee" ${a.fee_received ? 'checked' : ''}> Yes</label>
-        </dd>
+        <dt>Fee Received</dt><dd><label class="check"><input type="checkbox" id="app-fee" ${a.fee_received ? 'checked' : ''}> Yes</label></dd>
         <dt>Admin Notes</dt><dd><textarea id="app-notes">${escapeHtml(a.admin_notes || '')}</textarea></dd>
       </div>
       <div class="dialog-actions">
-        <button class="btn" id="app-save">Save Changes</button>
+        <button class="btn" id="app-delete-item">Delete</button>
+        <button class="btn g" id="app-save">Save Changes</button>
       </div>
     `;
     dialog.showModal();
     $('#app-dialog .dialog-close').onclick = () => dialog.close();
+
+    $('#app-delete-item').onclick = async () => {
+      const ok = await confirmDialog('Delete application', 'Delete application ' + escapeHtml(a.reference) + '? This cannot be undone.', 'Delete', 'Cancel', 'Delete');
+      if (!ok) return;
+      try {
+        await apiFetch('/api/admin/applications/' + id, { method: 'DELETE' });
+        showToast('Application deleted');
+        dialog.close();
+        await loadApplications();
+        loadDashboard();
+      } catch (e) { showToast('Delete failed: ' + e.message, true); }
+    };
+
     $('#app-save').onclick = async () => {
+      setLoading($('#app-save'), true);
       const status = $('#app-status').value;
       const fee_received = $('#app-fee').checked;
       const admin_notes = $('#app-notes').value;
@@ -259,42 +420,112 @@ async function openApplicationDialog(id) {
         showToast('Application updated');
         dialog.close();
         await loadApplications();
+        loadDashboard();
       } catch (e) { showToast('Save failed: ' + e.message, true); }
+      finally { setLoading($('#app-save'), false); }
     };
   } catch (e) { showToast('Failed to load application: ' + e.message, true); }
+}
+
+async function deleteApplication(id) {
+  const ok = await confirmDialog('Delete application', 'Delete this application? This cannot be undone.', 'Delete', 'Cancel', 'Delete');
+  if (!ok) return;
+  try {
+    await apiFetch('/api/admin/applications/' + id, { method: 'DELETE' });
+    showToast('Application deleted');
+    await loadApplications();
+    loadDashboard();
+  } catch (e) { showToast('Delete failed: ' + e.message, true); }
 }
 
 // --- Enquiries ---
 let enqsCache = [];
 let enqsPage = 1;
 const ENQS_PER_PAGE = 25;
+let enqStatusFilter = '';
+let enqSearch = '';
 
 async function loadEnquiries() {
   try {
     const data = await apiFetch('/api/admin/enquiries');
     enqsCache = data.enquiries || [];
     enqsPage = 1;
+    enqStatusFilter = $('#enq-status-filter') ? $('#enq-status-filter').value : '';
     renderEnquiries();
+    renderEnqChips();
   } catch (e) {
     showToast('Failed to load enquiries: ' + e.message, true);
   }
 }
 
+function renderEnqChips() {
+  const container = $('#enq-chips');
+  if (!container) return;
+  const statuses = [...new Set(enqsCache.map(e => e.status).filter(Boolean))];
+  container.innerHTML = `
+    <button class="chip${!enqStatusFilter ? ' on' : ''}" data-status="">All (${enqsCache.length})</button>
+    ${statuses.map(s => `
+      <button class="chip${enqStatusFilter === s ? ' on' : ''}" data-status="${escapeHtml(s)}">${escapeHtml(s)} (${enqsCache.filter(e => e.status === s).length})</button>
+    `).join('')}
+  `;
+  $$('#enq-chips .chip').forEach(b => {
+    b.onclick = () => {
+      enqStatusFilter = b.dataset.status || '';
+      $('#enq-status-filter').value = enqStatusFilter;
+      enqsPage = 1;
+      renderEnquiries();
+      renderEnqChips();
+    };
+  });
+}
+
+function filterEnquiries() {
+  const q = (enqSearch || '').toLowerCase();
+  const s = enqStatusFilter || '';
+  return enqsCache.filter(e => {
+    const matchText = !q ||
+      String(e.name || '').toLowerCase().includes(q) ||
+      String(e.email || '').toLowerCase().includes(q) ||
+      String(e.message || '').toLowerCase().includes(q);
+    const matchStatus = !s || e.status === s;
+    return matchText && matchStatus;
+  });
+}
+
 function renderEnquiries() {
+  const filtered = filterEnquiries();
   const start = (enqsPage - 1) * ENQS_PER_PAGE;
-  const pageItems = enqsCache.slice(start, start + ENQS_PER_PAGE);
+  const pageItems = filtered.slice(start, start + ENQS_PER_PAGE);
   const tbody = $('#enqs-tbody');
-  tbody.innerHTML = pageItems.map(e => `
-    <tr data-id="${e.id}">
-      <td>${escapeHtml(e.name)}</td>
-      <td>${escapeHtml(e.email)}</td>
-      <td>${escapeHtml(e.enquiry_type)}</td>
-      <td><span class="badge ${e.status}">${escapeHtml(e.status)}</span></td>
-      <td>${fmtDate(e.created_at)}</td>
-    </tr>
-  `).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--mut)">No enquiries</td></tr>';
-  $('#enqs-pagination').innerHTML = renderPagination(enqsCache.length, enqsPage, ENQS_PER_PAGE, 'enqs');
+  const selectAll = $('#enq-select-all');
+  const allSelected = pageItems.length > 0 && pageItems.every(e => bulkSelections.enquiries.has(e.id));
+
+  tbody.innerHTML = pageItems.map(e => {
+    const selected = bulkSelections.enquiries.has(e.id);
+    return `
+      <tr data-id="${e.id}" class="${selected ? 'selected' : ''}">
+        <td class="table-check"><input type="checkbox" class="row-select" data-id="${e.id}" ${selected ? 'checked' : ''}></td>
+        <td>${escapeHtml(e.name)}</td>
+        <td><a href="mailto:${escapeHtml(e.email)}">${escapeHtml(e.email)}</a></td>
+        <td>${escapeHtml(e.enquiry_type)}</td>
+        <td><span class="badge ${escapeHtml(e.status)}">${escapeHtml(e.status)}</span></td>
+        <td>${fmtDate(e.created_at)}</td>
+        <td class="table-actions">
+          <div class="row-actions">
+            <button class="action-btn view" title="View" onclick="openEnquiryDialog('${escapeHtml(e.id)}')">View</button>
+            <button class="action-btn edit" title="Edit" onclick="openEnquiryDialog('${escapeHtml(e.id)}')">Edit</button>
+            <button class="action-btn delete" title="Delete" onclick="deleteEnquiry('${escapeHtml(e.id)}')">Delete</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('') || `<tr><td colspan="7" style="text-align:center;color:var(--mut)">No enquiries</td></tr>`;
+
+  $('#enqs-pagination').innerHTML = renderPagination(filtered.length, enqsPage, ENQS_PER_PAGE, 'enqs');
+  if (selectAll) selectAll.checked = allSelected;
   attachRowClicks('enqs');
+  attachSelectAll('enq-select-all', 'enquiries');
+  updateBulkBar();
 }
 
 async function openEnquiryDialog(id) {
@@ -307,7 +538,7 @@ async function openEnquiryDialog(id) {
       <button class="dialog-close" aria-label="Close">&times;</button>
       <div class="detail-grid">
         <dt>Name</dt><dd>${escapeHtml(e.name)}</dd>
-        <dt>Email</dt><dd>${escapeHtml(e.email)}</dd>
+        <dt>Email</dt><dd><a href="mailto:${escapeHtml(e.email)}">${escapeHtml(e.email)}</a></dd>
         <dt>Type</dt><dd>${escapeHtml(e.enquiry_type)}</dd>
         <dt>Message</dt><dd>${escapeHtml(e.message)}</dd>
         <dt>Status</dt><dd>
@@ -317,20 +548,48 @@ async function openEnquiryDialog(id) {
             <option value="replied" ${e.status === 'replied' ? 'selected' : ''}>Replied</option>
           </select>
         </dd>
-        <dt>Reply Subject</dt><dd><input type="text" id="enq-reply-subject" placeholder="Subject"></dd>
-        <dt>Reply Body</dt><dd><textarea id="enq-reply-body" rows="6" placeholder="Your reply..."></textarea></dd>
+        <dt>Reply Subject</dt><dd><input type="text" id="enq-reply-subject" placeholder="Subject" value="${escapeHtml(e.reply_subject || '')}"></dd>
+        <dt>Reply Body</dt><dd><textarea id="enq-reply-body" rows="6" placeholder="Your reply...">${escapeHtml(e.reply_body || '')}</textarea></dd>
       </div>
       <div class="dialog-actions">
-        <button class="btn" id="enq-save-reply">Save Reply & Mark Replied</button>
+        <button class="btn" id="enq-delete-item">Delete</button>
         <button class="btn" id="enq-save-status">Save Status Only</button>
+        <button class="btn g" id="enq-save-reply">Save Reply & Mark Replied</button>
       </div>
     `;
     dialog.showModal();
     $('#enq-dialog .dialog-close').onclick = () => dialog.close();
+
+    $('#enq-delete-item').onclick = async () => {
+      const ok = await confirmDialog('Delete enquiry', 'Delete enquiry from ' + escapeHtml(e.name) + '? This cannot be undone.', 'Delete', 'Cancel', 'Delete');
+      if (!ok) return;
+      try {
+        await apiFetch('/api/admin/enquiries/' + id, { method: 'DELETE' });
+        showToast('Enquiry deleted');
+        dialog.close();
+        await loadEnquiries();
+        loadDashboard();
+      } catch (err) { showToast('Delete failed: ' + err.message, true); }
+    };
+
+    $('#enq-save-status').onclick = async () => {
+      setLoading($('#enq-save-status'), true);
+      const status = $('#enq-status').value;
+      try {
+        await apiFetch('/api/admin/enquiries/' + e.id, { method: 'PATCH', body: JSON.stringify({ status }) });
+        showToast('Status updated');
+        dialog.close();
+        await loadEnquiries();
+        loadDashboard();
+      } catch (err) { showToast('Save failed: ' + err.message, true); }
+      finally { setLoading($('#enq-save-status'), false); }
+    };
+
     $('#enq-save-reply').onclick = async () => {
+      setLoading($('#enq-save-reply'), true);
       const reply_subject = $('#enq-reply-subject').value.trim();
       const reply_body = $('#enq-reply-body').value.trim();
-      if (!reply_subject || !reply_body) { showToast('Enter subject and reply', true); return; }
+      if (!reply_subject || !reply_body) { showToast('Enter subject and reply', true); setLoading($('#enq-save-reply'), false); return; }
       try {
         const res = await apiFetch('/api/admin/enquiries/' + e.id, {
           method: 'PATCH',
@@ -341,24 +600,31 @@ async function openEnquiryDialog(id) {
         else showToast('Reply saved');
         dialog.close();
         await loadEnquiries();
+        loadDashboard();
       } catch (err) { showToast('Save failed: ' + err.message, true); }
-    };
-    $('#enq-save-status').onclick = async () => {
-      const status = $('#enq-status').value;
-      try {
-        await apiFetch('/api/admin/enquiries/' + e.id, { method: 'PATCH', body: JSON.stringify({ status }) });
-        showToast('Status updated');
-        dialog.close();
-        await loadEnquiries();
-      } catch (err) { showToast('Save failed: ' + err.message, true); }
+      finally { setLoading($('#enq-save-reply'), false); }
     };
   } catch (err) { showToast('Failed to load enquiry: ' + err.message, true); }
+}
+
+async function deleteEnquiry(id) {
+  const ok = await confirmDialog('Delete enquiry', 'Delete this enquiry? This cannot be undone.', 'Delete', 'Cancel', 'Delete');
+  if (!ok) return;
+  try {
+    await apiFetch('/api/admin/enquiries/' + id, { method: 'DELETE' });
+    showToast('Enquiry deleted');
+    await loadEnquiries();
+    loadDashboard();
+  } catch (e) { showToast('Delete failed: ' + e.message, true); }
 }
 
 // --- Content ---
 const CONTENT_TABLES = ['programmes', 'gallery_items', 'achievements'];
 let currentContentTable = 'programmes';
 let contentCache = [];
+let contentSearch = '';
+let contentPage = 1;
+const CONTENT_PER_PAGE = 25;
 
 async function loadContent() {
   currentContentTable = 'programmes';
@@ -371,6 +637,7 @@ async function loadContent() {
 
 async function switchContentTable(table) {
   currentContentTable = table;
+  contentPage = 1;
   $$('.content-tab').forEach(b => b.classList.toggle('active', b.dataset.table === table));
   await loadContentTable(table);
 }
@@ -383,24 +650,46 @@ async function loadContentTable(table) {
   } catch (e) { showToast('Failed to load ' + table + ': ' + e.message, true); }
 }
 
-function renderContentTable(table) {
-  const tbody = $('#content-tbody');
-  const isGallery = table === 'gallery_items';
-  tbody.innerHTML = contentCache.map(item => `
-    <tr data-id="${item.id}">
-      <td>${escapeHtml(item.name || item.title || item.id)}</td>
-      <td>${isGallery ? escapeHtml(item.collection) : escapeHtml(item.slug || '')}</td>
-      <td>${item.published !== undefined ? (item.published ? 'Yes' : 'No') : ''}</td>
-      <td>${fmtDate(item.created_at)}</td>
-    </tr>
-  `).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--mut)">No items</td></tr>';
-  attachContentRowClicks(table);
+function filterContent() {
+  const q = (contentSearch || '').toLowerCase();
+  return contentCache.filter(item => {
+    const name = String(item.name || item.title || '').toLowerCase();
+    return !q || name.includes(q);
+  });
 }
 
-function attachContentRowClicks(table) {
-  $$('#content-tbody tr[data-id]').forEach(tr => {
-    tr.addEventListener('click', () => openContentDialog(table, tr.dataset.id));
-  });
+function renderContentTable(table) {
+  const filtered = filterContent();
+  const tbody = $('#content-tbody');
+  const isGallery = table === 'gallery_items';
+  const selectAll = $('#content-select-all');
+  const allSelected = filtered.length > 0 && filtered.every(i => bulkSelections.content.has(i.id));
+
+  tbody.innerHTML = filtered.map(item => {
+    const selected = bulkSelections.content.has(item.id);
+    return `
+      <tr data-id="${item.id}" class="${selected ? 'selected' : ''}">
+        <td class="table-check"><input type="checkbox" class="row-select" data-id="${item.id}" ${selected ? 'checked' : ''}></td>
+        <td>${escapeHtml(item.name || item.title || item.id)}</td>
+        <td>${isGallery ? escapeHtml(item.collection || '') : escapeHtml(item.slug || '')}</td>
+        <td>${item.published !== undefined ? (item.published ? '<span class="badge paid">Published</span>' : '<span class="badge unpaid">Unpublished</span>') : ''}</td>
+        <td>${fmtDate(item.created_at)}</td>
+        <td class="table-actions">
+          <div class="row-actions">
+            <button class="action-btn view" title="View" onclick="openContentDialog('${escapeHtml(table)}', '${escapeHtml(String(item.id))}')">View</button>
+            <button class="action-btn edit" title="Edit" onclick="openContentDialog('${escapeHtml(table)}', '${escapeHtml(String(item.id))}')">Edit</button>
+            <button class="action-btn delete" title="Delete" onclick="deleteContent('${escapeHtml(table)}', '${escapeHtml(String(item.id))}')">Delete</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('') || `<tr><td colspan="6" style="text-align:center;color:var(--mut)">No items</td></tr>`;
+
+  $('#content-pagination').innerHTML = renderPagination(filtered.length, 1, CONTENT_PER_PAGE, 'content');
+  if (selectAll) selectAll.checked = allSelected;
+  attachRowClicks('content');
+  attachSelectAll('content-select-all', 'content');
+  updateBulkBar();
 }
 
 async function openContentDialog(table, id) {
@@ -426,13 +715,27 @@ async function openContentDialog(table, id) {
       <button class="dialog-close" aria-label="Close">&times;</button>
       <div class="detail-grid">${fieldsHtml}</div>
       <div class="dialog-actions">
-        <button class="btn" id="content-save">Save</button>
-        <button class="btn" id="content-delete" style="background:transparent;color:#dc3c3c;border-color:#dc3c3c">Delete</button>
+        <button class="btn" id="content-delete-item">Delete</button>
+        <button class="btn g" id="content-save">Save</button>
       </div>
     `;
     dialog.showModal();
     $('#content-dialog .dialog-close').onclick = () => dialog.close();
+
+    $('#content-delete-item').onclick = async () => {
+      const ok = await confirmDialog('Delete item', 'Delete this ' + table.replace('_', ' ') + '? This cannot be undone.', 'Delete', 'Cancel', 'Delete');
+      if (!ok) return;
+      try {
+        await apiFetch('/api/admin/content/' + table + '/' + id, { method: 'DELETE' });
+        showToast('Deleted');
+        dialog.close();
+        await loadContentTable(table);
+        loadDashboard();
+      } catch (e) { showToast('Delete failed: ' + e.message, true); }
+    };
+
     $('#content-save').onclick = async () => {
+      setLoading($('#content-save'), true);
       const updates = {};
       $$('#content-dialog [name]').forEach(el => {
         if (el.type === 'checkbox') updates[el.name] = el.checked;
@@ -443,25 +746,73 @@ async function openContentDialog(table, id) {
         showToast('Saved');
         dialog.close();
         await loadContentTable(table);
+        loadDashboard();
       } catch (e) { showToast('Save failed: ' + e.message, true); }
-    };
-    $('#content-delete').onclick = async () => {
-      if (!confirm('Delete this item?')) return;
-      try {
-        await apiFetch('/api/admin/content/' + table + '/' + id, { method: 'DELETE' });
-        showToast('Deleted');
-        dialog.close();
-        await loadContentTable(table);
-      } catch (e) { showToast('Delete failed: ' + e.message, true); }
+      finally { setLoading($('#content-save'), false); }
     };
   } catch (e) { showToast('Failed to load item: ' + e.message, true); }
+}
+
+async function deleteContent(table, id) {
+  const ok = await confirmDialog('Delete item', 'Delete this ' + table.replace('_', ' ') + '? This cannot be undone.', 'Delete', 'Cancel', 'Delete');
+  if (!ok) return;
+  try {
+    await apiFetch('/api/admin/content/' + table + '/' + id, { method: 'DELETE' });
+    showToast('Deleted');
+    await loadContentTable(table);
+    loadDashboard();
+  } catch (e) { showToast('Delete failed: ' + e.message, true); }
+}
+
+async function openContentCreateDialog() {
+  const table = currentContentTable;
+  const dialog = $('#content-dialog');
+  let fieldsHtml = '';
+  const defaults = table === 'programmes' ? { published: false, sort_order: 0 } :
+                   table === 'gallery_items' ? { collection: 'design', published: false, sort_order: 0 } :
+                   { verified: false, published: false, sort_order: 0 };
+  for (const [key, val] of Object.entries(defaults)) {
+    if (typeof val === 'boolean') {
+      fieldsHtml += `<dt>${key}</dt><dd><label class="check"><input type="checkbox" name="${key}" ${val ? 'checked' : ''}> Yes</label></dd>`;
+    } else {
+      fieldsHtml += `<dt>${key}</dt><dd><input type="text" name="${key}" value="${val}"></dd>`;
+    }
+  }
+  dialog.innerHTML = `
+    <h2>Create ${table.replace('_', ' ')}</h2>
+    <button class="dialog-close" aria-label="Close">&times;</button>
+    <div class="detail-grid">${fieldsHtml}</div>
+    <div class="dialog-actions">
+      <button class="btn g" id="content-create-save">Create</button>
+    </div>
+  `;
+  dialog.showModal();
+  $('#content-dialog .dialog-close').onclick = () => dialog.close();
+  $('#content-create-save').onclick = async () => {
+    setLoading($('#content-create-save'), true);
+    const data = {};
+    $$('#content-dialog [name]').forEach(el => {
+      data[el.name] = el.type === 'checkbox' ? el.checked : el.value;
+    });
+    try {
+      await apiFetch('/api/admin/content/' + table, { method: 'POST', body: JSON.stringify(data) });
+      showToast('Created');
+      dialog.close();
+      await loadContentTable(table);
+      loadDashboard();
+    } catch (e) { showToast('Create failed: ' + e.message, true); }
+    finally { setLoading($('#content-create-save'), false); }
+  };
 }
 
 // --- Audit ---
 async function loadAudit() {
   try {
-    const data = await apiFetch('/api/admin/audit');
+    const tableFilter = $('#audit-table-filter') ? $('#audit-table-filter').value : '';
+    const url = tableFilter ? '/api/admin/audit?table=' + encodeURIComponent(tableFilter) : '/api/admin/audit';
+    const data = await apiFetch(url);
     const tbody = $('#audit-tbody');
+    renderAuditChips(data.logs || []);
     tbody.innerHTML = (data.logs || []).map(l => `
       <tr>
         <td>${fmtDate(l.created_at)}</td>
@@ -476,11 +827,67 @@ async function loadAudit() {
   } catch (e) { showToast('Failed to load audit: ' + e.message, true); }
 }
 
+function renderAuditChips(logs) {
+  const container = $('#audit-chips');
+  if (!container) return;
+  const tables = [...new Set(logs.map(l => l.target_table).filter(Boolean))];
+  container.innerHTML = `
+    <button class="chip${!$('#audit-table-filter').value ? ' on' : ''}" data-table="">All (${logs.length})</button>
+    ${tables.map(t => `
+      <button class="chip${$('#audit-table-filter').value === t ? ' on' : ''}" data-table="${escapeHtml(t)}">${escapeHtml(t)} (${logs.filter(l => l.target_table === t).length})</button>
+    `).join('')}
+  `;
+  $$('#audit-chips .chip').forEach(b => {
+    b.onclick = () => {
+      $('#audit-table-filter').value = b.dataset.table || '';
+      loadAudit();
+    };
+  });
+}
+
+// --- Bulk actions ---
+async function bulkAction(tableKey, action) {
+  const ids = Array.from(bulkSelections[tableKey]);
+  if (ids.length === 0) { showToast('No items selected', true); return; }
+
+  const ok = await confirmDialog(
+    'Bulk ' + action,
+    'Apply "' + action + '" to ' + ids.length + ' selected item' + (ids.length > 1 ? 's' : '') + '?',
+    'Apply', 'Cancel', 'Apply'
+  );
+  if (!ok) return;
+
+  try {
+    if (tableKey === 'applications') {
+      await apiFetch('/api/admin/applications/bulk', { method: 'POST', body: JSON.stringify({ ids, action }) });
+    } else if (tableKey === 'enquiries') {
+      await apiFetch('/api/admin/enquiries/bulk', { method: 'POST', body: JSON.stringify({ ids, action }) });
+    } else if (tableKey === 'content') {
+      // content bulk publish/unpublish handled per-item below
+      for (const id of ids) {
+        const item = contentCache.find(c => c.id === id);
+        if (!item) continue;
+        const newPublished = action === 'publish';
+        await apiFetch('/api/admin/content/' + currentContentTable + '/' + id, {
+          method: 'PATCH', body: JSON.stringify({ published: newPublished })
+        });
+      }
+    }
+    showToast('Bulk action completed');
+    bulkSelections[tableKey].clear();
+    updateBulkBar();
+    if (tableKey === 'applications') await loadApplications();
+    else if (tableKey === 'enquiries') await loadEnquiries();
+    else if (tableKey === 'content') await loadContentTable(currentContentTable);
+    loadDashboard();
+  } catch (e) { showToast('Bulk action failed: ' + e.message, true); }
+}
+
 // --- Auth ---
 async function doLogin(email, password) {
   const btn = $('#login-btn');
   const msg = $('#login-msg');
-  btn.disabled = true; btn.textContent = 'Signing in...';
+  setLoading(btn, true);
   msg.hidden = true; msg.textContent = ''; msg.className = 'note f';
   try {
     const res = await fetch('/api/admin/login', {
@@ -500,10 +907,12 @@ async function doLogin(email, password) {
     if (emailEl) emailEl.classList.add('error');
     if (pwEl) pwEl.classList.add('error');
     emailEl?.focus();
-  } finally { btn.disabled = false; btn.textContent = 'Sign In'; }
+  } finally { setLoading(btn, false); }
 }
 
 async function doLogout() {
+  const ok = await confirmDialog('Sign out', 'Sign out of the admin panel?', 'Sign out', 'Cancel', 'Sign out');
+  if (!ok) return;
   clearAuth();
   window.location.reload();
 }
@@ -566,7 +975,7 @@ function showLoginForm() {
     const msg = $('#login-msg');
     const emailEl = $('#login-email');
     const pwEl = $('#login-password');
-    btn.classList.add('loading');
+    setLoading(btn, true);
     msg.hidden = true;
     msg.textContent = '';
     msg.className = 'note f error';
@@ -582,7 +991,7 @@ function showLoginForm() {
       pwEl.classList.add('error');
       emailEl.focus();
     } finally {
-      btn.classList.remove('loading');
+      setLoading(btn, false);
     }
   };
   $('#login-toggle-pw')?.addEventListener('click', () => {
@@ -638,11 +1047,9 @@ function initMobileSidebar() {
 
   toggle.onclick = (e) => { e.stopPropagation(); toggleSidebar(); };
   backdrop.onclick = close;
-  // Close on Escape
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && sidebar.classList.contains('adm-side-open')) close();
   });
-  // Close when clicking a nav link
   $$('.adm-link').forEach(b => b.addEventListener('click', close));
 }
 
@@ -696,46 +1103,75 @@ function wireEvents() {
     if (box) { e.preventDefault(); box.focus(); }
   });
   // Search
-  $('#app-search')?.addEventListener('input', e => filterTable('apps', e.target.value));
-  $('#enq-search')?.addEventListener('input', e => filterTable('enqs', e.target.value));
+  $('#app-search')?.addEventListener('input', e => { appSearch = e.target.value; appsPage = 1; renderApplications(); });
+  $('#enq-search')?.addEventListener('input', e => { enqSearch = e.target.value; enqsPage = 1; renderEnquiries(); });
   // Export
   $('#app-export')?.addEventListener('click', () => exportCSV('apps'));
   $('#enq-export')?.addEventListener('click', () => exportCSV('enqs'));
   // Create content
   $('#content-create')?.addEventListener('click', () => openContentCreateDialog());
-}
-
-function filterTable(prefix, query) {
-  const rows = $$(`#${prefix}-tbody tr[data-id]`);
-  const q = query.toLowerCase();
-  rows.forEach(tr => {
-    const text = tr.textContent.toLowerCase();
-    tr.style.display = text.includes(q) ? '' : 'none';
+  // Audit refresh
+  $('#audit-refresh')?.addEventListener('click', () => loadAudit());
+  // Bulk action buttons
+  $$('[id^="app-bulk-"]').forEach(btn => {
+    btn.onclick = () => bulkAction('applications', btn.id.replace('app-bulk-', ''));
   });
-}
-
-async function bulkAction(prefix, action) {
-  if (!action) return;
-  const selected = $$(`#${prefix}-tbody input[type="checkbox"]:checked`);
-  if (selected.length === 0) { showToast('No items selected', true); return; }
-  const ids = Array.from(selected).map(cb => cb.closest('tr').dataset.id);
-  try {
-    if (prefix === 'apps') {
-      await apiFetch('/api/admin/applications/bulk', { method: 'POST', body: JSON.stringify({ ids, action }) });
-    } else {
-      await apiFetch('/api/admin/enquiries/bulk', { method: 'POST', body: JSON.stringify({ ids, action }) });
+  $$('[id^="enq-bulk-"]').forEach(btn => {
+    btn.onclick = () => bulkAction('enquiries', btn.id.replace('enq-bulk-', ''));
+  });
+  $$('[id^="content-bulk-"]').forEach(btn => {
+    btn.onclick = () => bulkAction('content', btn.id.replace('content-bulk-', ''));
+  });
+  // Delete selected buttons
+  $('#app-delete-selected')?.addEventListener('click', async () => {
+    const ids = Array.from(bulkSelections.applications);
+    if (ids.length === 0) return;
+    const ok = await confirmDialog('Delete applications', 'Delete ' + ids.length + ' selected application' + (ids.length > 1 ? 's' : '') + '?', 'Delete', 'Cancel', 'Delete');
+    if (!ok) return;
+    for (const id of ids) {
+      try { await apiFetch('/api/admin/applications/' + id, { method: 'DELETE' }); } catch {}
     }
-    showToast('Bulk action completed');
-    if (prefix === 'apps') await loadApplications();
-    else await loadEnquiries();
-  } catch (e) { showToast('Bulk action failed: ' + e.message, true); }
+    showToast('Deleted ' + ids.length + ' application' + (ids.length > 1 ? 's' : ''));
+    bulkSelections.applications.clear();
+    updateBulkBar();
+    await loadApplications();
+    loadDashboard();
+  });
+  $('#enq-delete-selected')?.addEventListener('click', async () => {
+    const ids = Array.from(bulkSelections.enquiries);
+    if (ids.length === 0) return;
+    const ok = await confirmDialog('Delete enquiries', 'Delete ' + ids.length + ' selected enquiry' + (ids.length > 1 ? 's' : '') + '?', 'Delete', 'Cancel', 'Delete');
+    if (!ok) return;
+    for (const id of ids) {
+      try { await apiFetch('/api/admin/enquiries/' + id, { method: 'DELETE' }); } catch {}
+    }
+    showToast('Deleted ' + ids.length + ' enquiry' + (ids.length > 1 ? 's' : ''));
+    bulkSelections.enquiries.clear();
+    updateBulkBar();
+    await loadEnquiries();
+    loadDashboard();
+  });
+  $('#content-delete-selected')?.addEventListener('click', async () => {
+    const ids = Array.from(bulkSelections.content);
+    if (ids.length === 0) return;
+    const ok = await confirmDialog('Delete items', 'Delete ' + ids.length + ' selected item' + (ids.length > 1 ? 's' : '') + '?', 'Delete', 'Cancel', 'Delete');
+    if (!ok) return;
+    for (const id of ids) {
+      try { await apiFetch('/api/admin/content/' + currentContentTable + '/' + id, { method: 'DELETE' }); } catch {}
+    }
+    showToast('Deleted ' + ids.length + ' item' + (ids.length > 1 ? 's' : ''));
+    bulkSelections.content.clear();
+    updateBulkBar();
+    await loadContentTable(currentContentTable);
+    loadDashboard();
+  });
 }
 
 function exportCSV(prefix) {
   const rows = $$(`#${prefix}-tbody tr[data-id]`);
   if (rows.length === 0) { showToast('No data to export', true); return; }
   const headers = prefix === 'apps'
-    ? ['Reference', 'Programme', 'Name', 'Email', 'Phone', 'Status', 'Created']
+    ? ['Reference', 'Programme', 'Name', 'Email', 'Phone', 'Status', 'Fee', 'Created']
     : ['Name', 'Email', 'Type', 'Status', 'Created'];
   const csv = [headers.join(',')];
   rows.forEach(tr => {
@@ -750,44 +1186,13 @@ function exportCSV(prefix) {
   a.click(); URL.revokeObjectURL(url);
 }
 
-// Content create dialog
-async function openContentCreateDialog() {
-  const table = currentContentTable;
-  const dialog = $('#content-dialog');
-  let fieldsHtml = '';
-  const defaults = table === 'programmes' ? { published: false, sort_order: 0 } :
-                   table === 'gallery_items' ? { collection: 'design', published: false, sort_order: 0 } :
-                   { verified: false, published: false, sort_order: 0 };
-  for (const [key, val] of Object.entries(defaults)) {
-    if (typeof val === 'boolean') {
-      fieldsHtml += `<dt>${key}</dt><dd><label class="check"><input type="checkbox" name="${key}" ${val ? 'checked' : ''}> Yes</label></dd>`;
-    } else {
-      fieldsHtml += `<dt>${key}</dt><dd><input type="text" name="${key}" value="${val}"></dd>`;
-    }
-  }
-  dialog.innerHTML = `
-    <h2>Create ${table.replace('_', ' ')}</h2>
-    <button class="dialog-close" aria-label="Close">&times;</button>
-    <div class="detail-grid">${fieldsHtml}</div>
-    <div class="dialog-actions">
-      <button class="btn g" id="content-create-save">Create</button>
-    </div>
-  `;
-  dialog.showModal();
-  $('#content-dialog .dialog-close').onclick = () => dialog.close();
-  $('#content-create-save').onclick = async () => {
-    const data = {};
-    $$('#content-dialog [name]').forEach(el => {
-      data[el.name] = el.type === 'checkbox' ? el.checked : el.value;
-    });
-    try {
-      await apiFetch('/api/admin/content/' + table, { method: 'POST', body: JSON.stringify(data) });
-      showToast('Created');
-      dialog.close();
-      await loadContentTable(table);
-    } catch (e) { showToast('Create failed: ' + e.message, true); }
-  };
-}
+// Expose global handlers for inline onclick in rendered HTML
+window.openApplicationDialog = openApplicationDialog;
+window.openEnquiryDialog = openEnquiryDialog;
+window.openContentDialog = openContentDialog;
+window.deleteApplication = deleteApplication;
+window.deleteEnquiry = deleteEnquiry;
+window.deleteContent = deleteContent;
 
 wireEvents();
 initApp();

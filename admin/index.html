@@ -7,7 +7,7 @@
   <title>Admin - Jokel Fashion World</title>
   <link rel="icon" href="/images/logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=Manrope:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/src/styles/main.css">
   <link rel="stylesheet" href="/admin/admin.css">
 </head>
@@ -26,8 +26,8 @@
       </a>
       <div class="adm-nav" id="adm-nav" role="navigation" aria-label="Admin sections">
         <button class="adm-link active" data-tab="dashboard"><i aria-hidden="true">&#9647;</i><span>Dashboard</span></button>
-        <button class="adm-link" data-tab="applications"><i aria-hidden="true">&#9998;</i><span>Applications</span><b class="adm-badge" id="badge-applications" hidden></b></button>
-        <button class="adm-link" data-tab="enquiries"><i aria-hidden="true">&#9993;</i><span>Enquiries</span><b class="adm-badge" id="badge-enquiries" hidden></b></button>
+        <button class="adm-link" data-tab="applications"><i aria-hidden="true">&#9998;</i><span>Applications</span><b class="adm-badge" id="badge-applications" hidden>0</b></button>
+        <button class="adm-link" data-tab="enquiries"><i aria-hidden="true">&#9993;</i><span>Enquiries</span><b class="adm-badge" id="badge-enquiries" hidden>0</b></button>
         <button class="adm-link" data-tab="content"><i aria-hidden="true">&#9638;</i><span>Content</span></button>
         <button class="adm-link" data-tab="audit"><i aria-hidden="true">&#9776;</i><span>Audit Log</span></button>
       </div>
@@ -39,61 +39,94 @@
     </aside>
 
     <main class="adm-main" id="adm-main">
+
+      <!-- Dashboard -->
       <section class="adm-sec" id="tab-dashboard" data-tab="dashboard">
-        <div class="adm-top"><div><h1>Dashboard</h1><p class="adm-sub">What needs your attention today.</p></div><button class="btn" id="refresh-all">Refresh</button></div>
+        <div class="adm-top"><div><h1>Dashboard</h1><p class="adm-sub">Overview of your academy operations.</p></div><button class="btn" id="refresh-all">Refresh</button></div>
         <div class="stats-grid" id="stats"></div>
         <div class="adm-cols">
-          <div class="adm-card"><div class="adm-card-h"><h3>New applications</h3><button class="adm-more" data-tab="applications" data-filter="submitted">View all &#8594;</button></div><div id="recent-apps" class="adm-list"></div></div>
-          <div class="adm-card"><div class="adm-card-h"><h3>New enquiries</h3><button class="adm-more" data-tab="enquiries" data-filter="new">View all &#8594;</button></div><div id="recent-enqs" class="adm-list"></div></div>
+          <div class="adm-card"><div class="adm-card-h"><h3>Recent applications</h3><button class="adm-more" data-tab="applications" data-filter="submitted">View all &#8594;</button></div><div id="recent-apps" class="adm-list"></div></div>
+          <div class="adm-card"><div class="adm-card-h"><h3>Recent enquiries</h3><button class="adm-more" data-tab="enquiries" data-filter="new">View all &#8594;</button></div><div id="recent-enqs" class="adm-list"></div></div>
         </div>
       </section>
 
+      <!-- Applications -->
       <section class="adm-sec" id="tab-applications" hidden data-tab="applications">
-        <div class="adm-top"><div><h1>Applications</h1><p class="adm-sub" id="app-count"></p></div><button class="btn" id="app-export">Export CSV</button></div>
+        <div class="adm-top"><div><h1>Applications</h1><p class="adm-sub" id="app-count"></p></div><div class="adm-actions"><button class="btn g" id="app-export">Export CSV</button><button class="btn" id="app-delete-selected" hidden>Delete selected</button></div></div>
         <div class="adm-tools">
-          <input type="search" id="app-search" placeholder="Search name, email, reference...  ( / )" aria-label="Search applications">
+          <input type="search" id="app-search" placeholder="Search name, email, reference... ( / )" aria-label="Search applications">
           <div class="chips" id="app-chips" role="group" aria-label="Filter by status"></div>
           <input type="hidden" id="app-status-filter" value="">
         </div>
+        <div class="bulk-bar" id="app-bulk-bar" hidden>
+          <div class="bulk-info"><b id="app-bulk-count">0</b> selected</div>
+          <div class="bulk-actions">
+            <button class="btn small" id="app-bulk-submitted">Submitted</button>
+            <button class="btn small" id="app-bulk-under_review">Under Review</button>
+            <button class="btn small" id="app-bulk-accepted">Accepted</button>
+            <button class="btn small" id="app-bulk-rejected">Rejected</button>
+            <button class="btn small adm-btn-danger" id="app-bulk-delete">Delete</button>
+          </div>
+          <button class="bulk-close" id="app-bulk-close" aria-label="Clear selection">&times;</button>
+        </div>
         <div class="table-wrap">
-          <table><thead><tr><th>Reference</th><th>Programme</th><th>Name</th><th>Email</th><th>Phone</th><th>Status</th><th>Created</th></tr></thead>
-            <tbody id="apps-tbody"></tbody>
-          </table>
+          <table><thead><tr><th class="table-check"><input type="checkbox" id="app-select-all" aria-label="Select all"></th><th>Reference</th><th>Programme</th><th>Name</th><th>Email</th><th>Phone</th><th>Status</th><th>Fee</th><th>Created</th><th class="table-actions">Actions</th></tr></thead><tbody id="apps-tbody"></tbody></table>
         </div>
         <div id="apps-pagination"></div>
       </section>
 
+      <!-- Enquiries -->
       <section class="adm-sec" id="tab-enquiries" hidden data-tab="enquiries">
-        <div class="adm-top"><div><h1>Enquiries</h1><p class="adm-sub" id="enq-count"></p></div><button class="btn" id="enq-export">Export CSV</button></div>
+        <div class="adm-top"><div><h1>Enquiries</h1><p class="adm-sub" id="enq-count"></p></div><div class="adm-actions"><button class="btn g" id="enq-export">Export CSV</button><button class="btn" id="enq-delete-selected" hidden>Delete selected</button></div></div>
         <div class="adm-tools">
-          <input type="search" id="enq-search" placeholder="Search name, email, message...  ( / )" aria-label="Search enquiries">
+          <input type="search" id="enq-search" placeholder="Search name, email, message... ( / )" aria-label="Search enquiries">
           <div class="chips" id="enq-chips" role="group" aria-label="Filter by status"></div>
           <input type="hidden" id="enq-status-filter" value="">
         </div>
+        <div class="bulk-bar" id="enq-bulk-bar" hidden>
+          <div class="bulk-info"><b id="enq-bulk-count">0</b> selected</div>
+          <div class="bulk-actions">
+            <button class="btn small" id="enq-bulk-new">New</button>
+            <button class="btn small" id="enq-bulk-read">Read</button>
+            <button class="btn small" id="enq-bulk-replied">Replied</button>
+            <button class="btn small adm-btn-danger" id="enq-bulk-delete">Delete</button>
+          </div>
+          <button class="bulk-close" id="enq-bulk-close" aria-label="Clear selection">&times;</button>
+        </div>
         <div class="table-wrap">
-          <table><thead><tr><th>Name</th><th>Email</th><th>Type</th><th>Status</th><th>Created</th></tr></thead>
-            <tbody id="enqs-tbody"></tbody>
-          </table>
+          <table><thead><tr><th class="table-check"><input type="checkbox" id="enq-select-all" aria-label="Select all"></th><th>Name</th><th>Email</th><th>Type</th><th>Status</th><th>Created</th><th class="table-actions">Actions</th></tr></thead><tbody id="enqs-tbody"></tbody></table>
         </div>
         <div id="enqs-pagination"></div>
       </section>
 
+      <!-- Content -->
       <section class="adm-sec" id="tab-content" hidden data-tab="content">
-        <div class="adm-top"><div><h1>Content</h1><p class="adm-sub">Manage programmes, gallery, and achievements.</p></div><button class="btn g" id="content-create">Create</button></div>
+        <div class="adm-top"><div><h1>Content</h1><p class="adm-sub">Manage programmes, gallery, and achievements.</p></div><div class="adm-actions"><button class="btn g" id="content-create">Create</button><button class="btn" id="content-delete-selected" hidden>Delete selected</button></div></div>
         <div class="content-tabs" id="content-tabs" role="tablist"></div>
         <div class="table-wrap">
-          <table><thead><tr><th>Name / Title</th><th>Slug / Collection</th><th>Published</th><th>Created</th></tr></thead>
-            <tbody id="content-tbody"></tbody>
-          </table>
+          <table><thead><tr><th class="table-check"><input type="checkbox" id="content-select-all" aria-label="Select all"></th><th>Name / Title</th><th>Slug / Collection</th><th>Published</th><th>Created</th><th class="table-actions">Actions</th></tr></thead><tbody id="content-tbody"></tbody></table>
         </div>
+        <div class="bulk-bar" id="content-bulk-bar" hidden>
+          <div class="bulk-info"><b id="content-bulk-count">0</b> selected</div>
+          <div class="bulk-actions">
+            <button class="btn small" id="content-bulk-publish">Publish</button>
+            <button class="btn small" id="content-bulk-unpublish">Unpublish</button>
+            <button class="btn small adm-btn-danger" id="content-bulk-delete">Delete</button>
+          </div>
+          <button class="bulk-close" id="content-bulk-close" aria-label="Clear selection">&times;</button>
+        </div>
+        <div id="content-pagination"></div>
       </section>
 
+      <!-- Audit Log -->
       <section class="adm-sec" id="tab-audit" hidden data-tab="audit">
-        <div class="adm-top"><div><h1>Audit Log</h1><p class="adm-sub">Track of admin actions.</p></div></div>
+        <div class="adm-top"><div><h1>Audit Log</h1><p class="adm-sub">Track of admin actions across the system.</p></div><div class="adm-actions"><button class="btn" id="audit-refresh">Refresh</button></div></div>
+        <div class="adm-tools">
+          <div class="chips" id="audit-chips" role="group" aria-label="Filter by table"></div>
+          <input type="hidden" id="audit-table-filter" value="">
+        </div>
         <div class="table-wrap">
-          <table><thead><tr><th>Time</th><th>Admin</th><th>Table</th><th>Record ID</th><th>Field</th><th>Old Value</th><th>New Value</th></tr></thead>
-            <tbody id="audit-tbody"></tbody>
-          </table>
+          <table><thead><tr><th>Time</th><th>Admin</th><th>Table</th><th>Record ID</th><th>Field</th><th>Old Value</th><th>New Value</th></tr></thead><tbody id="audit-tbody"></tbody></table>
         </div>
       </section>
     </main>
@@ -102,6 +135,7 @@
   <dialog id="app-dialog" class="admin-dialog"></dialog>
   <dialog id="enq-dialog" class="admin-dialog"></dialog>
   <dialog id="content-dialog" class="admin-dialog"></dialog>
+  <dialog id="confirm-dialog" class="admin-dialog confirm-dialog"></dialog>
 
   <div id="toasts" aria-live="polite"></div>
 

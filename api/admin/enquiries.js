@@ -147,5 +147,46 @@ export default async function handler(req, res) {
     }
   }
 
+  if (req.method === 'DELETE' && id.match(/^\d+$/)) {
+    try {
+      await sql`delete from enquiries where id = ${id}`;
+      await logAudit(auth.adminEmail, 'enquiries', id, 'deleted', 'exists', '');
+      return res.status(200).json({ success: true });
+    } catch (e) {
+      console.error('Enquiry delete error:', e);
+      return secureError(res, 500, 'Failed to delete enquiry');
+    }
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/admin/enquiries/bulk') {
+    const { ids, action } = req.body || {};
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'ids required' });
+    }
+    const ALLOWED_ACTIONS = ['new', 'read', 'replied', 'delete'];
+    if (!ALLOWED_ACTIONS.includes(action)) {
+      return res.status(400).json({ error: 'Invalid action' });
+    }
+    try {
+      if (action === 'delete') {
+        for (const id of ids) {
+          await sql`delete from enquiries where id = ${id}`;
+          await logAudit(auth.adminEmail, 'enquiries', String(id), 'deleted', 'bulk', '');
+        }
+      } else {
+        let nextRepliedAt = null;
+        if (action === 'replied') nextRepliedAt = new Date().toISOString();
+        for (const id of ids) {
+          await sql`update enquiries set status = ${action}, replied_at = ${nextRepliedAt} where id = ${id}`;
+          await logAudit(auth.adminEmail, 'enquiries', String(id), 'status', 'bulk', action);
+        }
+      }
+      return res.status(200).json({ success: true });
+    } catch (e) {
+      console.error('Enquiry bulk error:', e);
+      return secureError(res, 500, 'Failed to process bulk action');
+    }
+  }
+
   return res.status(405).json({ error: 'Method not allowed' });
 }

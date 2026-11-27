@@ -115,5 +115,44 @@ export default async function handler(req, res) {
     }
   }
 
+  if (req.method === 'DELETE' && id.match(/^[0-9a-f-]{36}$/i)) {
+    try {
+      await sql`delete from applications where id = ${id}`;
+      await logAudit(auth.adminEmail, 'applications', id, 'deleted', 'exists', '');
+      return res.status(200).json({ success: true });
+    } catch (e) {
+      console.error('Application delete error:', e);
+      return secureError(res, 500, 'Failed to delete application');
+    }
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/admin/applications/bulk') {
+    const { ids, action } = req.body || {};
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: 'ids required' });
+    }
+    const ALLOWED_ACTIONS = ['submitted', 'under_review', 'accepted', 'rejected', 'delete'];
+    if (!ALLOWED_ACTIONS.includes(action)) {
+      return res.status(400).json({ error: 'Invalid action' });
+    }
+    try {
+      if (action === 'delete') {
+        for (const id of ids) {
+          await sql`delete from applications where id = ${id}`;
+          await logAudit(auth.adminEmail, 'applications', String(id), 'deleted', 'bulk', '');
+        }
+      } else {
+        for (const id of ids) {
+          await sql`update applications set status = ${action}, updated_at = now() where id = ${id}`;
+          await logAudit(auth.adminEmail, 'applications', String(id), 'status', 'bulk', action);
+        }
+      }
+      return res.status(200).json({ success: true });
+    } catch (e) {
+      console.error('Application bulk error:', e);
+      return secureError(res, 500, 'Failed to process bulk action');
+    }
+  }
+
   return res.status(405).json({ error: 'Method not allowed' });
 }
