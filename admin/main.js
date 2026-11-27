@@ -164,17 +164,28 @@ async function loadDashboard() {
       <div class="stat"><div class="stat-val">${s.submitted ?? 0}</div><div class="stat-label">New Applications</div></div>
       <div class="stat"><div class="stat-val">${s.underReview ?? 0}</div><div class="stat-label">Under Review</div></div>
       <div class="stat"><div class="stat-val">${s.accepted ?? 0}</div><div class="stat-label">Accepted</div></div>
-      <div class="stat"><div class="stat-val">${s.rejected ?? 0}</div><div class="stat-label">Rejected</div></div>
-      <div class="stat"><div class="stat-val">${s.feeReceived ?? 0}</div><div class="stat-label">Fees Received</div></div>
       <div class="stat"><div class="stat-val">${s.totalEnquiries ?? 0}</div><div class="stat-label">Total Enquiries</div></div>
       <div class="stat"><div class="stat-val">${s.newEnquiries ?? 0}</div><div class="stat-label">New Enquiries</div></div>
-      <div class="stat"><div class="stat-val">${s.programmes ?? 0}</div><div class="stat-label">Programmes</div></div>
-      <div class="stat"><div class="stat-val">${s.gallery_items ?? 0}</div><div class="stat-label">Gallery Items</div></div>
-      <div class="stat"><div class="stat-val">${s.achievements ?? 0}</div><div class="stat-label">Achievements</div></div>
     `;
     updateBadges(s);
+    updateDashBadges(s);
   } catch (e) {
     showToast('Failed to load dashboard: ' + e.message, true);
+  }
+}
+
+function updateDashBadges(s) {
+  const badges = {
+    'dash-badge-apps': (s.submitted ?? 0) + (s.underReview ?? 0),
+    'dash-badge-enqs': s.newEnquiries ?? 0,
+    'dash-badge-users': 0
+  };
+  for (const [id, count] of Object.entries(badges)) {
+    const el = $(id);
+    if (el) {
+      el.textContent = count;
+      el.hidden = count === 0;
+    }
   }
 }
 
@@ -256,6 +267,8 @@ function renderApplications() {
   const tbody = $('#apps-tbody');
   const selectAll = $('#app-select-all');
   const allSelected = pageItems.length > 0 && pageItems.every(a => bulkSelections.applications.has(a.id));
+  const countEl = $('#app-count');
+  if (countEl) countEl.textContent = filtered.length + ' application' + (filtered.length !== 1 ? 's' : '');
 
   tbody.innerHTML = pageItems.map(a => {
     const selected = bulkSelections.applications.has(a.id);
@@ -536,6 +549,8 @@ function renderEnquiries() {
   const tbody = $('#enqs-tbody');
   const selectAll = $('#enq-select-all');
   const allSelected = pageItems.length > 0 && pageItems.every(e => bulkSelections.enquiries.has(e.id));
+  const countEl = $('#enq-count');
+  if (countEl) countEl.textContent = filtered.length + ' enquiry' + (filtered.length !== 1 ? 'ies' : '');
 
   tbody.innerHTML = pageItems.map(e => {
     const selected = bulkSelections.enquiries.has(e.id);
@@ -951,6 +966,8 @@ function updateUserBadge() {
 
 function renderUsers() {
   const tbody = $('#users-tbody');
+  const countEl = $('#users-count');
+  if (countEl) countEl.textContent = usersCache.length + ' user' + (usersCache.length !== 1 ? 's' : '');
   tbody.innerHTML = usersCache.map(u => `
     <tr data-id="${u.id}">
       <td>${escapeHtml(u.name || '—')}</td>
@@ -1061,6 +1078,8 @@ async function loadSettings() {
 
 function renderSettings() {
   const tbody = $('#settings-tbody');
+  const countEl = $('#settings-count');
+  if (countEl) countEl.textContent = settingsCache.length + ' setting' + (settingsCache.length !== 1 ? 's' : '');
   renderSettingsFiltered('');
 }
 
@@ -1350,6 +1369,11 @@ function wireEvents() {
     showToast('Refreshed');
   });
   $$('.adm-more').forEach(b => b.addEventListener('click', () => {
+    const tab = b.dataset.tab;
+    if (tab && TABS.includes(tab)) switchTab(tab);
+  }));
+  $$('.adm-dash-btn').forEach(b => b.addEventListener('click', (e) => {
+    e.preventDefault();
     const tab = b.dataset.tab;
     if (tab && TABS.includes(tab)) switchTab(tab);
   }));

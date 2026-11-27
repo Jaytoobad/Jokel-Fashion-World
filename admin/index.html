@@ -46,15 +46,29 @@
       <section class="adm-sec" id="tab-dashboard" data-tab="dashboard">
         <div class="adm-top"><div><h1>Dashboard</h1><p class="adm-sub">Overview of your academy operations.</p></div><button class="btn" id="refresh-all">Refresh</button></div>
         <div class="stats-grid" id="stats"></div>
-        <div class="adm-cols">
-          <div class="adm-card"><div class="adm-card-h"><h3>Recent applications</h3><button class="adm-more" data-tab="applications" data-filter="submitted">View all &#8594;</button></div><div id="recent-apps" class="adm-list"></div></div>
-          <div class="adm-card"><div class="adm-card-h"><h3>Recent enquiries</h3><button class="adm-more" data-tab="enquiries" data-filter="new">View all &#8594;</button></div><div id="recent-enqs" class="adm-list"></div></div>
+        <div class="adm-dash-cols">
+          <div class="adm-card dash-card">
+            <div class="adm-card-h"><h3>Recent Applications</h3><button class="adm-more" data-tab="applications">View all &#8594;</button></div>
+            <div id="recent-apps" class="adm-list"></div>
+          </div>
+          <div class="adm-card dash-card">
+            <div class="adm-card-h"><h3>Recent Enquiries</h3><button class="adm-more" data-tab="enquiries">View all &#8594;</button></div>
+            <div id="recent-enqs" class="adm-list"></div>
+          </div>
+        </div>
+        <div class="adm-dash-actions">
+          <a class="adm-dash-btn" data-tab="applications"><span class="adm-dash-icon">&#9998;</span><span>Applications</span><span class="adm-dash-badge" id="dash-badge-apps" hidden></span></a>
+          <a class="adm-dash-btn" data-tab="enquiries"><span class="adm-dash-icon">&#9993;</span><span>Enquiries</span><span class="adm-dash-badge" id="dash-badge-enqs" hidden></span></a>
+          <a class="adm-dash-btn" data-tab="content"><span class="adm-dash-icon">&#9638;</span><span>Content</span></a>
+          <a class="adm-dash-btn" data-tab="users"><span class="adm-dash-icon">&#128100;</span><span>Users</span><span class="adm-dash-badge" id="dash-badge-users" hidden></span></a>
+          <a class="adm-dash-btn" data-tab="settings"><span class="adm-dash-icon">&#9881;</span><span>Settings</span></a>
+          <a class="adm-dash-btn" data-tab="audit"><span class="adm-dash-icon">&#9776;</span><span>Audit Log</span></a>
         </div>
       </section>
 
       <!-- Applications -->
       <section class="adm-sec" id="tab-applications" hidden data-tab="applications">
-        <div class="adm-top"><div><h1>Applications</h1><p class="adm-sub" id="app-count"></p></div><div class="adm-actions"><button class="btn g" id="app-export">Export CSV</button><button class="btn" id="app-delete-selected" hidden>Delete selected</button></div></div>
+        <div class="adm-top"><div><h1>Applications</h1><p class="adm-sub" id="app-count">0 applications</p></div><div class="adm-actions"><button class="btn g" id="app-export">Export CSV</button><button class="btn" id="app-delete-selected" hidden>Delete selected</button></div></div>
         <div class="adm-tools">
           <input type="search" id="app-search" placeholder="Search name, email, reference... ( / )" aria-label="Search applications">
           <div class="chips" id="app-chips" role="group" aria-label="Filter by status"></div>
@@ -134,7 +148,7 @@
 
       <!-- Users -->
       <section class="adm-sec" id="tab-users" hidden data-tab="users">
-        <div class="adm-top"><div><h1>Admin Users</h1><p class="adm-sub">Manage admin accounts and access.</p></div><div class="adm-actions"><button class="btn g" id="user-create">Create User</button></div></div>
+        <div class="adm-top"><div><h1>Admin Users</h1><p class="adm-sub" id="users-count">0 users</p></div><div class="adm-actions"><button class="btn g" id="user-create">Create User</button></div></div>
         <div class="bulk-bar" id="users-bulk-bar" hidden>
           <div class="bulk-info"><b id="users-bulk-count">0</b> selected</div>
           <div class="bulk-actions">
@@ -149,7 +163,7 @@
 
       <!-- Settings -->
       <section class="adm-sec" id="tab-settings" hidden data-tab="settings">
-        <div class="adm-top"><div><h1>Site Settings</h1><p class="adm-sub">Manage site configuration key-value pairs.</p></div><div class="adm-actions"><button class="btn small adm-btn-danger" id="settings-delete-selected" hidden>Delete selected</button></div></div>
+        <div class="adm-top"><div><h1>Site Settings</h1><p class="adm-sub" id="settings-count">0 settings</p></div><div class="adm-actions"><button class="btn small adm-btn-danger" id="settings-delete-selected" hidden>Delete selected</button></div></div>
         <div class="adm-tools">
           <input type="search" id="settings-search" placeholder="Search setting key... ( / )" aria-label="Search settings">
         </div>
