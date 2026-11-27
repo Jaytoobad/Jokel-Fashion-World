@@ -48,7 +48,7 @@ achievements:()=>{
   }
   var headerHtml = "";
   if (C.achievements.length) {
-    headerHtml = '<div style="margin-top:32px"><div style="margin-top:16px"><span class="eye rv">Featured event</span><h3 class="rv" style="font-size:clamp(1.6rem,3vw,2rem)">'+C.achievements[0][1]+'</h3>'+ph("event",0,"","Fashion Showcase Awards 2026")+'</div></div>';
+    headerHtml = '<div style="margin-top:32px"><div style="margin-top:16px"><span class="eye rv">Featured event</span><h3 class="rv" style="font-size:clamp(1.6rem,3vw,2rem)">'+C.achievements[0][1]+'</h3><a class="img-link" href="#" target="_blank" rel="noopener">'+ph("event",0,"","Fashion Showcase Awards 2026")+'</a></div></div>';
   }
   var listHtml = itemsHtml ? '<div class="lst" style="margin-top:48px">'+itemsHtml+'</div>' : "";
   return '<section class="sec" style="padding-top:170px"><div class="w">'+head("Achievements","Milestones & recognition")+headerHtml+listHtml+'</div></section>';
