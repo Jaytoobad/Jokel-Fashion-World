@@ -21,16 +21,18 @@ async function run() {
   const js = await request(jsPath);
   
   console.log('JS length:', js.body.length);
-  console.log('Has design-07.jpg:', js.body.includes('design-07.jpg'));
+  console.log('Has hero image:', js.body.includes('design-07.jpg'));
   console.log('Has owner.jpg:', js.body.includes('owner.jpg'));
   console.log('Has ph("hero":', js.body.includes('ph("hero"'));
   
-  // Check for the actual img tag with design-07
-  const idx = js.body.indexOf('design-07');
-  if (idx >= 0) {
-    console.log('\nContext around design-07:');
-    console.log(js.body.substring(Math.max(0, idx-200), idx+100));
-  }
+  // Check admin routes
+  console.log('\nAdmin routes:');
+  console.log('  Has applications:', js.body.includes('applications'));
+  console.log('  Has enquiries:', js.body.includes('enquiries'));
+  console.log('  Has content:', js.body.includes('content'));
+  console.log('  Has audit:', js.body.includes('audit'));
+  
+  console.log('\nDone.');
 }
 
 run().catch(e => console.error('Error:', e.message));
