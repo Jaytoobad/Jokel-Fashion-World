@@ -22,7 +22,7 @@
 .login-input:focus{outline:0;border-color:var(--gold);box-shadow:0 0 0 3px rgba(220,174,60,0.1)}
 .login-pw-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--mut);cursor:pointer;font-size:1.1rem;padding:0;line-height:1}
 .login-pw-toggle:hover{color:var(--ink)}
-.field-input-wrap .login-input{padding-right:44px}
+.pw-wrap .login-input{padding-right:44px}
 
 /* Options row - bottom, below sign in button */
 .login-options{display:flex;align-items:center;justify-content:space-between;margin-top:20px;font-size:.8rem;color:var(--mut)}

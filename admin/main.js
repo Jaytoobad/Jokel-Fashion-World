@@ -521,11 +521,13 @@ function showLoginForm() {
         <form id="login-form">
           <div class="field">
             <label class="field-label">Email</label>
-            <input type="email" name="email" required autocomplete="email" class="login-input" placeholder="you@studio.com">
+            <div class="field-input-wrap">
+              <input type="email" name="email" required autocomplete="email" class="login-input" placeholder="you@studio.com">
+            </div>
           </div>
           <div class="field">
             <label class="field-label">Password</label>
-            <div class="field-input-wrap">
+            <div class="field-input-wrap pw-wrap">
               <input type="password" name="password" required autocomplete="current-password" class="login-input" placeholder="••••••••">
               <button type="button" id="login-toggle-pw" class="login-pw-toggle" aria-label="Toggle password visibility">&#128065;</button>
             </div>
