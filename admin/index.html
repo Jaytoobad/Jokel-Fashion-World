@@ -30,6 +30,8 @@
         <button class="adm-link" data-tab="enquiries"><i aria-hidden="true">&#9993;</i><span>Enquiries</span><b class="adm-badge" id="badge-enquiries" hidden>0</b></button>
         <button class="adm-link" data-tab="content"><i aria-hidden="true">&#9638;</i><span>Content</span></button>
         <button class="adm-link" data-tab="audit"><i aria-hidden="true">&#9776;</i><span>Audit Log</span></button>
+        <button class="adm-link" data-tab="users"><i aria-hidden="true">&#128100;</i><span>Users</span><b class="adm-badge" id="badge-users" hidden>0</b></button>
+        <button class="adm-link" data-tab="settings"><i aria-hidden="true">&#9881;</i><span>Settings</span></button>
       </div>
       <div class="adm-foot">
         <div id="user-info" class="user-info" hidden></div>
@@ -129,12 +131,32 @@
           <table><thead><tr><th>Time</th><th>Admin</th><th>Table</th><th>Record ID</th><th>Field</th><th>Old Value</th><th>New Value</th></tr></thead><tbody id="audit-tbody"></tbody></table>
         </div>
       </section>
+
+      <!-- Users -->
+      <section class="adm-sec" id="tab-users" hidden data-tab="users">
+        <div class="adm-top"><div><h1>Admin Users</h1><p class="adm-sub">Manage admin accounts and access.</p></div><div class="adm-actions"><button class="btn g" id="user-create">Create User</button></div></div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Last Login</th><th>Created</th><th class="table-actions">Actions</th></tr></thead><tbody id="users-tbody"></tbody></table>
+        </div>
+      </section>
+
+      <!-- Settings -->
+      <section class="adm-sec" id="tab-settings" hidden data-tab="settings">
+        <div class="adm-top"><div><h1>Site Settings</h1><p class="adm-sub">Manage site configuration key-value pairs.</p></div></div>
+        <div class="adm-tools">
+          <input type="search" id="settings-search" placeholder="Search setting key... ( / )" aria-label="Search settings">
+        </div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Key</th><th>Value</th><th>Updated</th><th class="table-actions">Actions</th></tr></thead><tbody id="settings-tbody"></tbody></table>
+        </div>
+      </section>
     </main>
   </div>
 
   <dialog id="app-dialog" class="admin-dialog"></dialog>
   <dialog id="enq-dialog" class="admin-dialog"></dialog>
   <dialog id="content-dialog" class="admin-dialog"></dialog>
+  <dialog id="user-dialog" class="admin-dialog"></dialog>
   <dialog id="confirm-dialog" class="admin-dialog confirm-dialog"></dialog>
 
   <div id="toasts" aria-live="polite"></div>

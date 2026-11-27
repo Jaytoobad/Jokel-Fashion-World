@@ -122,9 +122,9 @@ function confirmDialog(title, message, onConfirm, cancelLabel = 'Cancel', confir
 }
 
 // --- Tabs ---
-const TABS = ['dashboard', 'applications', 'enquiries', 'content', 'audit'];
+const TABS = ['dashboard', 'applications', 'enquiries', 'content', 'audit', 'users', 'settings'];
 let currentTab = 'dashboard';
-let bulkSelections = { applications: new Set(), enquiries: new Set(), content: new Set() };
+let bulkSelections = { applications: new Set(), enquiries: new Set(), content: new Set(), users: new Set(), settings: new Set() };
 
 function switchTab(name, opts = {}) {
   if (!TABS.includes(name)) name = 'dashboard';
@@ -146,6 +146,8 @@ async function loadTab(name) {
     else if (name === 'enquiries') await loadEnquiries();
     else if (name === 'content') await loadContent();
     else if (name === 'audit') await loadAudit();
+    else if (name === 'users') await loadUsers();
+    else if (name === 'settings') await loadSettings();
   } catch (e) {
     showToast('Failed to load ' + name + ': ' + e.message, true);
   }
@@ -272,6 +274,7 @@ function renderApplications() {
           <div class="row-actions">
             <button class="action-btn view" title="View" onclick="openApplicationDialog('${escapeHtml(a.id)}')">View</button>
             <button class="action-btn edit" title="Edit" onclick="openApplicationDialog('${escapeHtml(a.id)}')">Edit</button>
+            ${quickStatusButtons(a.status, a.id)}
             <button class="action-btn delete" title="Delete" onclick="deleteApplication('${escapeHtml(a.id)}')">Delete</button>
           </div>
         </td>
@@ -436,6 +439,31 @@ async function deleteApplication(id) {
     await loadApplications();
     loadDashboard();
   } catch (e) { showToast('Delete failed: ' + e.message, true); }
+}
+
+function quickStatusButtons(status, id) {
+  const isTerminal = status === 'accepted' || status === 'rejected';
+  if (isTerminal) {
+    return `<button class="action-btn" title="Reopen" onclick="quickStatus('${escapeHtml(String(id))}', 'submitted')" style="color:#dcae3c;border-color:#dcae3c">Reopen</button>`;
+  }
+  return `
+    <button class="action-btn" title="Accept" onclick="quickStatus('${escapeHtml(String(id))}', 'accepted')" style="color:#2ca64e;border-color:#2ca64e">Accept</button>
+    <button class="action-btn" title="Reject" onclick="quickStatus('${escapeHtml(String(id))}', 'rejected')" style="color:#dc3c3c;border-color:#dc3c3c">Reject</button>
+  `;
+}
+
+async function quickStatus(id, newStatus) {
+  const ok = await confirmDialog('Change status', 'Set application status to "' + newStatus + '"?', 'Change', 'Cancel', 'Change');
+  if (!ok) return;
+  try {
+    await apiFetch('/api/admin/applications/' + id, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: newStatus })
+    });
+    showToast('Status updated to ' + newStatus);
+    await loadApplications();
+    loadDashboard();
+  } catch (e) { showToast('Status change failed: ' + e.message, true); }
 }
 
 // --- Enquiries ---
@@ -883,6 +911,215 @@ async function bulkAction(tableKey, action) {
   } catch (e) { showToast('Bulk action failed: ' + e.message, true); }
 }
 
+// --- Users ---
+let usersCache = [];
+
+async function loadUsers() {
+  try {
+    const data = await apiFetch('/api/admin/users');
+    usersCache = data.users || [];
+    renderUsers();
+    updateUserBadge();
+  } catch (e) { showToast('Failed to load users: ' + e.message, true); }
+}
+
+function updateUserBadge() {
+  const badge = $('#badge-users');
+  if (!badge) return;
+  badge.textContent = usersCache.length;
+  badge.hidden = usersCache.length === 0;
+}
+
+function renderUsers() {
+  const tbody = $('#users-tbody');
+  tbody.innerHTML = usersCache.map(u => `
+    <tr data-id="${u.id}">
+      <td>${escapeHtml(u.name || '—')}</td>
+      <td>${escapeHtml(u.email)}</td>
+      <td><span class="badge ${u.is_active ? 'paid' : 'unpaid'}">${u.is_active ? 'Active' : 'Inactive'}</span></td>
+      <td>${u.last_login_at ? fmtDate(u.last_login_at) : 'Never'}</td>
+      <td>${fmtDate(u.created_at)}</td>
+      <td class="table-actions">
+        <div class="row-actions">
+          <button class="action-btn edit" title="Edit" onclick="openUserDialog('${escapeHtml(String(u.id))}')">Edit</button>
+          <button class="action-btn delete" title="Deactivate" onclick="deactivateUser('${escapeHtml(String(u.id))}', '${escapeHtml(u.email)}')">${u.is_active ? 'Deactivate' : 'Activate'}</button>
+        </div>
+      </td>
+    </tr>
+  `).join('') || `<tr><td colspan="6" style="text-align:center;color:var(--mut)">No users</td></tr>`;
+}
+
+async function openUserDialog(id) {
+  const isCreate = id === 'new';
+  const dialog = $('#user-dialog');
+  let user = null;
+  if (!isCreate) {
+    try {
+      const data = await apiFetch('/api/admin/users/' + id);
+      user = data.user;
+    } catch (e) { showToast('Failed to load user: ' + e.message, true); return; }
+  }
+  dialog.innerHTML = `
+    <h2>${isCreate ? 'Create Admin User' : 'Edit User: ' + escapeHtml(user.email)}</h2>
+    <button class="dialog-close" aria-label="Close">&times;</button>
+    <div class="detail-grid">
+      <dt>Email</dt><dd><input type="email" id="user-email" value="${isCreate ? '' : escapeHtml(user.email)}" ${!isCreate ? 'readonly' : ''} placeholder="name@example.com"></dd>
+      <dt>Name</dt><dd><input type="text" id="user-name" value="${isCreate ? '' : escapeHtml(user.name || '')}" placeholder="Full name"></dd>
+      ${isCreate ? '<dt>Password</dt><dd><input type="password" id="user-password" placeholder="Min 8 characters" required></dd>' : ''}
+      <dt>Active</dt><dd><label class="check"><input type="checkbox" id="user-active" ${(isCreate || user.is_active) ? 'checked' : ''}> Yes</label></dd>
+    </div>
+    <div class="dialog-actions">
+      ${!isCreate ? '<button class="btn" id="user-deactivate">' + (user.is_active ? 'Deactivate' : 'Activate') + '</button>' : ''}
+      <button class="btn g" id="user-save">${isCreate ? 'Create' : 'Save'}</button>
+    </div>
+  `;
+  dialog.showModal();
+  $('#user-dialog .dialog-close').onclick = () => dialog.close();
+
+  if (!isCreate) {
+    $('#user-deactivate').onclick = async () => {
+      const ok = await confirmDialog('Deactivate user', 'Deactivate ' + escapeHtml(user.email) + '? They will lose admin access.', 'Deactivate', 'Cancel', 'Deactivate');
+      if (!ok) return;
+      try {
+        await apiFetch('/api/admin/users/' + id, { method: 'DELETE' });
+        showToast('User deactivated');
+        dialog.close();
+        await loadUsers();
+        loadDashboard();
+      } catch (e) { showToast('Deactivate failed: ' + e.message, true); }
+    };
+  }
+
+  $('#user-save').onclick = async () => {
+    setLoading($('#user-save'), true);
+    const email = $('#user-email').value.trim().toLowerCase();
+    const name = $('#user-name').value.trim();
+    const active = $('#user-active').checked;
+    const body = { name, is_active: active };
+    if (isCreate) {
+      body.email = email;
+      body.password = $('#user-password').value;
+      if (!email || !body.password) { showToast('Email and password required', true); setLoading($('#user-save'), false); return; }
+      if (body.password.length < 8) { showToast('Password must be at least 8 characters', true); setLoading($('#user-save'), false); return; }
+    }
+    try {
+      if (isCreate) {
+        await apiFetch('/api/admin/users', { method: 'POST', body: JSON.stringify(body) });
+        showToast('User created');
+      } else {
+        await apiFetch('/api/admin/users/' + id, { method: 'PATCH', body: JSON.stringify(body) });
+        showToast('User updated');
+      }
+      dialog.close();
+      await loadUsers();
+      loadDashboard();
+    } catch (e) { showToast('Save failed: ' + e.message, true); }
+    finally { setLoading($('#user-save'), false); }
+  };
+}
+
+async function deactivateUser(id, email) {
+  const ok = await confirmDialog('Deactivate user', 'Deactivate ' + escapeHtml(email) + '? They will lose admin access.', 'Deactivate', 'Cancel', 'Deactivate');
+  if (!ok) return;
+  try {
+    await apiFetch('/api/admin/users/' + id, { method: 'DELETE' });
+    showToast('User deactivated');
+    await loadUsers();
+    loadDashboard();
+  } catch (e) { showToast('Deactivate failed: ' + e.message, true); }
+}
+
+// --- Settings ---
+let settingsCache = [];
+
+async function loadSettings() {
+  try {
+    const data = await apiFetch('/api/admin/settings');
+    settingsCache = data.settings || [];
+    renderSettings();
+  } catch (e) { showToast('Failed to load settings: ' + e.message, true); }
+}
+
+function renderSettings() {
+  const tbody = $('#settings-tbody');
+  renderSettingsFiltered('');
+}
+
+function renderSettingsFiltered(q) {
+  const tbody = $('#settings-tbody');
+  const filtered = settingsCache.filter(s => s.key.toLowerCase().includes(q));
+  tbody.innerHTML = filtered.map(s => {
+    const val = typeof s.value === 'object' ? JSON.stringify(s.value, null, 2) : String(s.value);
+    const shortVal = val.length > 60 ? val.slice(0, 60) + '…' : val;
+    return `
+      <tr data-key="${escapeHtml(s.key)}">
+        <td><code>${escapeHtml(s.key)}</code></td>
+        <td>${escapeHtml(shortVal)}</td>
+        <td>${fmtDate(s.updated_at)}</td>
+        <td class="table-actions">
+          <div class="row-actions">
+            <button class="action-btn edit" title="Edit" onclick="editSetting('${escapeHtml(s.key)}', ${JSON.stringify(val)})">Edit</button>
+            <button class="action-btn delete" title="Delete" onclick="deleteSetting('${escapeHtml(s.key)}')">Delete</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('') || `<tr><td colspan="4" style="text-align:center;color:var(--mut)">No settings</td></tr>`;
+}
+
+async function editSetting(key, currentValue) {
+  const dialog = $('#user-dialog');
+  dialog.innerHTML = `
+    <h2>Edit Setting: ${escapeHtml(key)}</h2>
+    <button class="dialog-close" aria-label="Close">&times;</button>
+    <div class="detail-grid">
+      <dt>Key</dt><dd><code>${escapeHtml(key)}</code></dd>
+      <dt>Value (JSON)</dt><dd><textarea id="setting-value" rows="8">${escapeHtml(currentValue)}</textarea></dd>
+    </div>
+    <div class="dialog-actions">
+      <button class="btn" id="setting-delete">Delete</button>
+      <button class="btn g" id="setting-save">Save</button>
+    </div>
+  `;
+  dialog.showModal();
+  $('#user-dialog .dialog-close').onclick = () => dialog.close();
+
+  $('#setting-delete').onclick = async () => {
+    const ok = await confirmDialog('Delete setting', 'Delete setting ' + escapeHtml(key) + '?', 'Delete', 'Cancel', 'Delete');
+    if (!ok) return;
+    try {
+      await apiFetch('/api/admin/settings/' + key, { method: 'DELETE' });
+      showToast('Setting deleted');
+      dialog.close();
+      await loadSettings();
+    } catch (e) { showToast('Delete failed: ' + e.message, true); }
+  };
+
+  $('#setting-save').onclick = async () => {
+    setLoading($('#setting-save'), true);
+    const raw = $('#setting-value').value;
+    let parsed;
+    try { parsed = JSON.parse(raw); } catch { showToast('Invalid JSON', true); setLoading($('#setting-save'), false); return; }
+    try {
+      await apiFetch('/api/admin/settings/' + key, { method: 'PATCH', body: JSON.stringify({ value: parsed }) });
+      showToast('Setting saved');
+      dialog.close();
+      await loadSettings();
+    } catch (e) { showToast('Save failed: ' + e.message, true); }
+    finally { setLoading($('#setting-save'), false); }
+  };
+}
+
+async function deleteSetting(key) {
+  const ok = await confirmDialog('Delete setting', 'Delete setting ' + escapeHtml(key) + '?', 'Delete', 'Cancel', 'Delete');
+  if (!ok) return;
+  try {
+    await apiFetch('/api/admin/settings/' + key, { method: 'DELETE' });
+    showToast('Setting deleted');
+    await loadSettings();
+  } catch (e) { showToast('Delete failed: ' + e.message, true); }
+}
+
 // --- Auth ---
 async function doLogin(email, password) {
   const btn = $('#login-btn');
@@ -1099,17 +1336,21 @@ function wireEvents() {
   }));
   document.addEventListener('keydown', e => {
     if (e.key !== '/' || e.target.closest('input,textarea,select') || document.querySelector('dialog[open]')) return;
-    const box = $(currentTab === 'applications' ? '#app-search' : currentTab === 'enquiries' ? '#enq-search' : '');
+    const box = $(currentTab === 'applications' ? '#app-search' : currentTab === 'enquiries' ? '#enq-search' : currentTab === 'settings' ? '#settings-search' : '');
     if (box) { e.preventDefault(); box.focus(); }
   });
   // Search
   $('#app-search')?.addEventListener('input', e => { appSearch = e.target.value; appsPage = 1; renderApplications(); });
   $('#enq-search')?.addEventListener('input', e => { enqSearch = e.target.value; enqsPage = 1; renderEnquiries(); });
-  // Export
-  $('#app-export')?.addEventListener('click', () => exportCSV('apps'));
-  $('#enq-export')?.addEventListener('click', () => exportCSV('enqs'));
+  $('#settings-search')?.addEventListener('input', e => {
+    const q = e.target.value.toLowerCase();
+    settingsCache.filter(s => s.key.toLowerCase().includes(q));
+    renderSettingsFiltered(q);
+  });
   // Create content
   $('#content-create')?.addEventListener('click', () => openContentCreateDialog());
+  // Create user
+  $('#user-create')?.addEventListener('click', () => openUserDialog('new'));
   // Audit refresh
   $('#audit-refresh')?.addEventListener('click', () => loadAudit());
   // Bulk action buttons
