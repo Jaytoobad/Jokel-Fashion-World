@@ -495,3 +495,77 @@ tr:hover td{background:var(--bg2)}
     max-width: 240px;
   }
 }
+
+/* ===== Admin UI Enhancements ===== */
+
+/* Enhanced dashboard stat cards */
+.stat{position:relative;overflow:hidden;transition:transform .2s,border-color .2s}
+.stat:hover{transform:translateY(-2px)}
+.stat-val{font-family:var(--serif);font-size:2.5rem;color:var(--gold);display:block;line-height:1}
+.stat-label{font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:var(--mut);margin-top:8px}
+
+/* Enhanced admin cards */
+.adm-card{position:relative;transition:box-shadow .2s,border-color .2s}
+.adm-card:hover{border-color:var(--mut)}
+.adm-more{font-size:.8rem;letter-spacing:.1em}
+
+/* Enhanced top bar */
+.adm-top{flex-wrap:wrap;gap:20px}
+.adm-top h1{font-family:var(--serif);margin:0}
+.adm-sub{color:var(--mut);font-size:.9rem}
+
+/* Enhanced tables */
+.table-wrap{position:relative}
+.table-wrap table{font-size:.9rem}
+th{font-family:var(--serif);font-size:.78rem;letter-spacing:.16em;text-transform:uppercase;background:var(--bg2)}
+td{color:var(--ink)}
+tr:hover td{background:var(--bg2)}
+tr td:first-child{font-family:var(--serif);font-weight:500}
+
+/* Enhanced empty states */
+.adm-empty{color:var(--mut);text-align:center;padding:40px 16px;font-size:.95rem;opacity:.8}
+
+/* Enhanced dialogs */
+.admin-dialog{color:var(--ink);border:1px solid var(--line);border-radius:20px;background:var(--bg);box-shadow:0 24px 80px #000a}
+.admin-dialog::backdrop{background:rgba(0,0,0,.7);backdrop-filter:blur(8px)}
+.admin-dialog h2{margin:0 0 24px 0;font-family:var(--serif);font-size:1.8rem;color:var(--ink)}
+.admin-dialog .dialog-actions{display:flex;justify-content:flex-end;gap:12px;margin-top:28px;padding-top:20px;border-top:1px solid var(--line)}
+.dialog-close{background:none;border:0;color:var(--mut);font-size:1.5rem;cursor:pointer;line-height:1;padding:4px}
+.dialog-close:hover{color:var(--ink)}
+
+/* Enhanced buttons */
+.btn{isolation:isolate;--f:var(--ink);--t:var(--bg);border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:12px 24px;border-radius:10px;font:inherit;font-size:.9rem;cursor:pointer;transition:all .2s}
+.btn:hover{color:var(--t)!important;background:var(--f)}
+.btn:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.btn.g{background:var(--gold);border-color:var(--gold);color:#161513}
+.btn.g::before{background:var(--ink)}
+.btn.small{padding:8px 16px;font-size:.85rem}
+
+/* Enhanced content tabs */
+.content-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}
+.content-tab{background:var(--bg2);border:1px solid var(--line);color:var(--mut);padding:10px 18px;font:inherit;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:8px;transition:all .2s}
+.content-tab:hover{color:var(--ink);border-color:var(--mut)}
+.content-tab.active{color:var(--gold);border-color:var(--gold);background:var(--bg2)}
+
+/* Enhanced form fields */
+label{font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);display:block;margin-bottom:6px}
+input,select,textarea{width:100%;padding:12px 14px;background:var(--bg2);border:1px solid var(--line);color:var(--ink);border-radius:10px;font:inherit;font-size:.9rem;box-sizing:border-box}
+input:focus,select:focus,textarea:focus{outline:0;border-color:var(--gold)}
+textarea{min-height:100px;resize:vertical}
+
+/* Enhanced badges */
+.badge{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;padding:5px 12px;border-radius:999px;font-weight:600}
+.badge.submitted{background:#dcae3c22;color:#dcae3c;border:1px solid #dcae3c}
+.badge.under_review{background:#3c8cdc22;color:#3c8cdc;border:1px solid #3c8cdc}
+.badge.accepted{background:#2ca64e22;color:#2ca64e;border:1px solid #2ca64e}
+.badge.rejected{background:#dc3c3c22;color:#dc3c3c;border:1px solid #dc3c3c}
+.badge.new{background:#dcae3c22;color:#dcae3c;border:1px solid #dcae3c}
+.badge.read{background:#3c8cdc22;color:#3c8cdc;border:1px solid #3c8cdc}
+.badge.replied{background:#2ca64e22;color:#2ca64e;border:1px solid #2ca64e}
+.badge.paid{background:#2ca64e22;color:#2ca64e;border:1px solid #2ca64e}
+.badge.unpaid{background:#dc3c3c22;color:#dc3c3c;border:1px solid #dc3c3c}
+
+/* Enhanced toasts */
+.toasts{position:fixed;right:24px;bottom:24px;z-index:200;display:grid;gap:12px;max-width:min(440px,calc(100vw - 48px))}
+.toasts .toast{position:relative;animation:slideIn .35s ease;display:flex;align-items:flex-start;gap:12px;padding:16px 20px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);box-shadow:0 20px 60px #000a;color:var(--ink)}
+.toast.error{border-color:#dc3c3c;background:#dc3c3c15}
