@@ -83,7 +83,7 @@ function route(){let p=location.pathname.replace(/^\/+|\/+$/g,'')||'home'; if(!R
 function go(){let h=route(); const want=h==='home'?'/':'/'+h; if(location.pathname!==want) history.replaceState(null,'',want+location.search); if(location.hash) history.replaceState(null,'',location.pathname+location.search); $("#m").innerHTML=R[h]();
   if(!$("#m").querySelector("h1")){$("#m").querySelector("h2")?.setAttribute("aria-level","1");$("#m").querySelector("h2")?.setAttribute("role","heading")}document.title=(h=="home"?"Jokel Fashion World — Fashion House & Academy":PAGES.find(p=>p[0]==h)[1]+" — Jokel Fashion World");
   document.querySelectorAll("nav a").forEach(a=>a.classList.toggle("on",a.dataset.p==h));
-  setMenu(false);scrollTo(0,0);if(!rm)$("#m").animate([{opacity:0,transform:"translateY(14px)"},{opacity:1,transform:"none"}],{duration:600,easing:"ease-out"});
+  setMenu(false);scrollTo(0,0);if(!rm){$("#m").style.opacity="0";$("#m").style.transform="translateY(12px)";requestAnimationFrame(()=>{$("#m").style.transition="all .7s cubic-bezier(.23,1,.32,1)";$("#m").style.opacity="1";$("#m").style.transform="translateY(0)";})}
   document.querySelectorAll(".rv").forEach(e=>io.observe(e.classList.contains("ph")?e.parentElement:e));document.querySelectorAll("video[data-amb]").forEach(v=>{v.controls=true; v.playsInline=true; v.preload=v.preload||'metadata'; v.dataset.amb="1"; if(!rm){ioV.observe(v);} });setupTileVideos(document);
   async function handleSubmit(form, endpoint, msgEl, successMsg) {
     const btn = form.querySelector('button[type="submit"]');
