@@ -520,26 +520,27 @@ function showLoginForm() {
         <div class="login-divider"></div>
         <form id="login-form">
           <div class="field">
-            <label style="display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--mut);text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px">Email</label>
+            <label class="field-label">Email</label>
             <input type="email" name="email" required autocomplete="email" class="login-input" placeholder="you@studio.com">
           </div>
-          <div class="field" style="margin-top:16px">
-            <label style="display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--mut);text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px">Password</label>
-            <div class="login-pw-wrap" style="position:relative">
-              <input type="password" name="password" required autocomplete="current-password" class="login-input" placeholder="••••••••" style="padding-right:44px">
+          <div class="field">
+            <label class="field-label">Password</label>
+            <div class="field-input-wrap">
+              <input type="password" name="password" required autocomplete="current-password" class="login-input" placeholder="••••••••">
               <button type="button" id="login-toggle-pw" class="login-pw-toggle" aria-label="Toggle password visibility">&#128065;</button>
             </div>
           </div>
-          <div class="login-options" style="margin-top:14px;display:flex;align-items:center;justify-content:space-between;font-size:.8rem;color:var(--mut)">
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--ink);margin:0">
-              <input type="checkbox" name="remember" style="accent-color:var(--gold)"> Remember me
+          <div class="login-options">
+            <label class="remember-label" style="display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--ink);font-size:.8rem;margin:0">
+              <input type="checkbox" name="remember" style="accent-color:var(--gold);margin:0">
+              Remember me
             </label>
-            <a href="#" class="login-forgot" style="text-decoration:none;color:var(--gold)">Forgot password?</a>
+            <a href="#" class="login-forgot" style="text-decoration:none;color:var(--gold);font-size:.8rem">Forgot password?</a>
           </div>
-          <div class="note f error" id="login-msg" hidden style="margin-top:12px"></div>
-          <button class="btn g" type="submit" id="login-btn" style="width:100%;margin-top:24px">Sign In</button>
+          <div class="note f error" id="login-msg" hidden></div>
+          <button class="btn g" type="submit" id="login-btn">Sign In</button>
         </form>
-        <div class="login-footer" style="margin-top:24px">
+        <div class="login-footer">
           <a href="/" class="login-back" style="text-decoration:none;color:var(--mut);font-size:.8rem">← Back to site</a>
         </div>
       </div>
