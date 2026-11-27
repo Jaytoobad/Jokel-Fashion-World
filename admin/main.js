@@ -558,6 +558,7 @@ function initApp() {
   const start = location.hash.slice(1);
   switchTab(TABS.includes(start) ? start : 'dashboard');
   initMobileSidebar();
+  loadRecentDashboard();
 }
 
 function initMobileSidebar() {
@@ -595,9 +596,49 @@ function initMobileSidebar() {
 }
 
 // --- Init ---
+async function loadRecentDashboard() {
+  try {
+    const [appsRes, enqsRes] = await Promise.all([
+      apiFetch('/api/admin/applications'),
+      apiFetch('/api/admin/enquiries'),
+    ]);
+    const recentApps = (appsRes.applications || []).slice(0, 3);
+    const recentEnqs = (enqsRes.enquiries || []).slice(0, 3);
+    const appsEl = $('#recent-apps');
+    const enqsEl = $('#recent-enqs');
+    if (appsEl) {
+      appsEl.innerHTML = recentApps.map(a => `
+        <div class="adm-item" data-tab="applications">
+          <span>${escapeHtml(a.full_name)}</span>
+          <time>${fmtDate(a.created_at)}</time>
+        </div>
+      `).join('') || '<div class="adm-empty">No applications</div>';
+    }
+    if (enqsEl) {
+      enqsEl.innerHTML = recentEnqs.map(e => `
+        <div class="adm-item" data-tab="enquiries">
+          <span>${escapeHtml(e.name)}</span>
+          <time>${fmtDate(e.created_at)}</time>
+        </div>
+      `).join('') || '<div class="adm-empty">No enquiries</div>';
+    }
+  } catch (e) {
+    // silent - dashboard recent items are non-critical
+  }
+}
+
 function wireEvents() {
   $$('.adm-link').forEach(b => b.onclick = () => switchTab(b.dataset.tab));
   $('#sign-out')?.addEventListener('click', doLogout);
+  $('#refresh-all')?.addEventListener('click', () => {
+    loadTab(currentTab);
+    loadRecentDashboard();
+    showToast('Refreshed');
+  });
+  $$('.adm-more').forEach(b => b.addEventListener('click', () => {
+    const tab = b.dataset.tab;
+    if (tab && TABS.includes(tab)) switchTab(tab);
+  }));
   document.addEventListener('keydown', e => {
     if (e.key !== '/' || e.target.closest('input,textarea,select') || document.querySelector('dialog[open]')) return;
     const box = $(currentTab === 'applications' ? '#app-search' : currentTab === 'enquiries' ? '#enq-search' : '');
@@ -606,9 +647,6 @@ function wireEvents() {
   // Search
   $('#app-search')?.addEventListener('input', e => filterTable('apps', e.target.value));
   $('#enq-search')?.addEventListener('input', e => filterTable('enqs', e.target.value));
-  // Bulk actions
-  $('#app-bulk')?.addEventListener('change', e => bulkAction('apps', e.target.value));
-  $('#enq-bulk')?.addEventListener('change', e => bulkAction('enqs', e.target.value));
   // Export
   $('#app-export')?.addEventListener('click', () => exportCSV('apps'));
   $('#enq-export')?.addEventListener('click', () => exportCSV('enqs'));
