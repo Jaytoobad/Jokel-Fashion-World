@@ -1,5 +1,4 @@
 ﻿import { neon } from '@neondatabase/serverless';
-import { Resend } from 'resend';
 import { checkRateLimit, getClientIp, validateEmail, trimAndLimit } from '../lib/utils.js';
 import { checkBodySize, secureError } from '../lib/security.js';
 
@@ -11,16 +10,6 @@ function getSql() {
     _sql = neon(url);
   }
   return _sql;
-}
-
-let _resend;
-function getResend() {
-  if (!_resend) {
-    const key = process.env.RESEND_API_KEY;
-    if (!key) return null;
-    _resend = new Resend(key);
-  }
-  return _resend;
 }
 
 export default async function handler(req, res) {
@@ -66,35 +55,6 @@ export default async function handler(req, res) {
       values (${vProgramme}, ${vFullName}, ${vEmail}, ${vPhone}, ${vDob}, ${vAddress || null}, ${vEducation}, ${vAdditional || null})
       returning reference
     `;
-
-    try {
-      const resend = getResend();
-      const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
-      const fromEmail = process.env.REPLY_FROM_EMAIL || 'noreply@jokel-fashion-world-sigma.vercel.app';
-      if (resend && adminEmails.length > 0) {
-        await resend.emails.send({
-          from: `Jokel Fashion World <${fromEmail}>`,
-          to: adminEmails,
-          subject: `New Application: ${vFullName} (${row.reference})`,
-          text: `A new application has been submitted.
-
-Reference: ${row.reference}
-Name: ${vFullName}
-Email: ${vEmail}
-Phone: ${vPhone}
-Date of Birth: ${vDob || '—'}
-Address: ${vAddress || '—'}
-Programme: ${vProgramme}
-Education Background: ${vEducation}
-Additional Info: ${vAdditional || '—'}
-
-View and manage this application in the admin dashboard at /admin`,
-        });
-      }
-    } catch (emailErr) {
-      console.error('Application email notification failed:', emailErr.message);
-    }
-
     return res.status(201).json({ success: true, reference: row.reference });
   } catch (e) {
     console.error('Application error:', e);

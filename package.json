@@ -15,7 +15,6 @@
     "@neon/config": "^1.14.0",
     "@neondatabase/serverless": "^1.0.0",
     "bcryptjs": "^2.4.3",
-    "jose": "^5.9.0",
-    "resend": "^6.40.1"
+    "jose": "^5.9.0"
   }
 }
