@@ -168,24 +168,8 @@ async function loadDashboard() {
       <div class="stat"><div class="stat-val">${s.newEnquiries ?? 0}</div><div class="stat-label">New Enquiries</div></div>
     `;
     updateBadges(s);
-    updateDashBadges(s);
   } catch (e) {
     showToast('Failed to load dashboard: ' + e.message, true);
-  }
-}
-
-function updateDashBadges(s) {
-  const badges = {
-    'dash-badge-apps': (s.submitted ?? 0) + (s.underReview ?? 0),
-    'dash-badge-enqs': s.newEnquiries ?? 0,
-    'dash-badge-users': 0
-  };
-  for (const [id, count] of Object.entries(badges)) {
-    const el = $(id);
-    if (el) {
-      el.textContent = count;
-      el.hidden = count === 0;
-    }
   }
 }
 
@@ -1369,11 +1353,6 @@ function wireEvents() {
     showToast('Refreshed');
   });
   $$('.adm-more').forEach(b => b.addEventListener('click', () => {
-    const tab = b.dataset.tab;
-    if (tab && TABS.includes(tab)) switchTab(tab);
-  }));
-  $$('.adm-dash-btn').forEach(b => b.addEventListener('click', (e) => {
-    e.preventDefault();
     const tab = b.dataset.tab;
     if (tab && TABS.includes(tab)) switchTab(tab);
   }));
