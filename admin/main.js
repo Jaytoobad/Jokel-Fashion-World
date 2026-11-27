@@ -530,6 +530,8 @@ function showLoginForm() {
               <button type="button" id="login-toggle-pw" class="login-pw-toggle" aria-label="Toggle password visibility">&#128065;</button>
             </div>
           </div>
+          <div class="note f error" id="login-msg" hidden></div>
+          <button class="btn g" type="submit" id="login-btn">Sign In</button>
           <div class="login-options">
             <label class="remember-label" style="display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--ink);font-size:.8rem;margin:0">
               <input type="checkbox" name="remember" style="accent-color:var(--gold);margin:0">
@@ -537,8 +539,6 @@ function showLoginForm() {
             </label>
             <a href="#" class="login-forgot" style="text-decoration:none;color:var(--gold);font-size:.8rem">Forgot password?</a>
           </div>
-          <div class="note f error" id="login-msg" hidden></div>
-          <button class="btn g" type="submit" id="login-btn">Sign In</button>
         </form>
         <div class="login-footer">
           <a href="/" class="login-back" style="text-decoration:none;color:var(--mut);font-size:.8rem">← Back to site</a>

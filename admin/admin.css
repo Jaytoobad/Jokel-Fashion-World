@@ -24,10 +24,10 @@
 .login-pw-toggle:hover{color:var(--ink)}
 .field-input-wrap .login-input{padding-right:44px}
 
-/* Options row */
-.login-options{display:flex;align-items:center;justify-content:space-between;margin-top:18px;font-size:.8rem;color:var(--mut)}
-.remember-label{display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--ink);font-size:.8rem;margin:0}
-.remember-label input[type="checkbox"]{accent-color:var(--gold);margin:0}
+/* Options row - bottom, below sign in button */
+.login-options{display:flex;align-items:center;justify-content:space-between;margin-top:20px;font-size:.8rem;color:var(--mut)}
+.login-options label{margin:0}
+.login-options input[type="checkbox"]{accent-color:var(--gold)}
 .login-forgot{text-decoration:none;color:var(--gold);font-size:.8rem}
 .login-forgot:hover{text-decoration:underline}
 
@@ -35,8 +35,8 @@
 .note.error{animation:slideDown 0.3s ease;margin-top:12px}
 @keyframes slideDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
 
-/* Submit button */
-.btn.g{width:100%;margin-top:24px}
+/* Submit button - centered */
+.btn.g{width:100%;max-width:240px;margin:26px auto 0 auto;display:block}
 
 /* Footer */
 .login-footer{margin-top:28px}
