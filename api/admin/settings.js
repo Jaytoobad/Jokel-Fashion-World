@@ -19,7 +19,7 @@ export default async function handler(req, res) {
   const key = pathParts[pathParts.length - 1];
 
   // GET /api/admin/settings — list all settings
-  if (req.method === 'GET' && !key) {
+  if (req.method === 'GET' && pathParts.length === 3) {
     try {
       const rows = await sql`select key, value, updated_at from site_settings order by key asc`;
       return res.status(200).json({ settings: rows });
@@ -30,7 +30,7 @@ export default async function handler(req, res) {
   }
 
   // GET /api/admin/settings/:key — get single setting
-  if (req.method === 'GET' && key) {
+  if (req.method === 'GET' && pathParts.length === 4) {
     try {
       const result = await sql`select key, value, updated_at from site_settings where key = ${key}`;
       if (!result.length) return res.status(404).json({ error: 'Setting not found' });
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
   }
 
   // POST /api/admin/settings — create setting
-  if (req.method === 'POST' && !key) {
+  if (req.method === 'POST' && pathParts.length === 3) {
     const { key: k, value } = req.body || {};
     if (!k) return res.status(400).json({ error: 'Key required' });
     if (value === undefined) return res.status(400).json({ error: 'Value required' });
@@ -61,7 +61,7 @@ export default async function handler(req, res) {
   }
 
   // PATCH /api/admin/settings/:key — update setting
-  if (req.method === 'PATCH' && key) {
+  if (req.method === 'PATCH' && pathParts.length === 4) {
     const { value } = req.body || {};
     if (value === undefined) return res.status(400).json({ error: 'Value required' });
     const current = await sql`select value from site_settings where key = ${key}`;
@@ -84,7 +84,7 @@ export default async function handler(req, res) {
   }
 
   // DELETE /api/admin/settings/:key — delete setting
-  if (req.method === 'DELETE' && key) {
+  if (req.method === 'DELETE' && pathParts.length === 4) {
     try {
       await sql`delete from site_settings where key = ${key}`;
       await logAudit(auth.adminEmail, 'site_settings', key, 'deleted', 'exists', '');

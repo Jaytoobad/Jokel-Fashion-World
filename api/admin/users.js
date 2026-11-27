@@ -19,7 +19,7 @@ export default async function handler(req, res) {
   const id = pathParts[pathParts.length - 1];
 
   // GET /api/admin/users — list all admin users
-  if (req.method === 'GET' && !id) {
+  if (req.method === 'GET' && pathParts.length === 3) {
     try {
       const users = await sql`
         select id, email, name, is_active, last_login_at, created_at, updated_at
@@ -50,7 +50,7 @@ export default async function handler(req, res) {
   }
 
   // POST /api/admin/users — create new admin user
-  if (req.method === 'POST' && !id) {
+  if (req.method === 'POST' && pathParts.length === 3) {
     const { email, name, password, is_active } = req.body || {};
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password required' });
