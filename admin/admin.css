@@ -13,30 +13,32 @@
 .login-header p{margin:0;color:var(--mut);font-size:.85rem}
 .login-divider{height:1px;background:linear-gradient(90deg,transparent,var(--line),transparent);margin:26px 0}
 
-/* Form fields */
+/* Form fields - vertical, full-width, identical sizing */
 .field{margin:0}
 .field + .field{margin-top:16px}
 .field-label{display:block;font-size:.8rem;color:var(--mut);text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px}
 .field-input-wrap{position:relative;width:100%}
-.login-input{width:100%;padding:12px 14px;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:10px;font:inherit;font-size:.9rem;box-sizing:border-box}
+.login-input{width:100%;box-sizing:border-box;padding:12px 14px;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:10px;font:inherit;font-size:.9rem}
+.login-input::placeholder{color:var(--mut);opacity:.6}
 .login-input:focus{outline:0;border-color:var(--gold);box-shadow:0 0 0 3px rgba(220,174,60,0.1)}
+.login-input:hover{border-color:var(--mut)}
 .login-pw-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--mut);cursor:pointer;font-size:1.1rem;padding:0;line-height:1}
 .login-pw-toggle:hover{color:var(--ink)}
 .pw-wrap .login-input{padding-right:44px}
-
-/* Options row - bottom, below sign in button */
-.login-options{display:flex;align-items:center;justify-content:space-between;margin-top:20px;font-size:.8rem;color:var(--mut)}
-.login-options label{margin:0}
-.login-options input[type="checkbox"]{accent-color:var(--gold)}
-.login-forgot{text-decoration:none;color:var(--gold);font-size:.8rem}
-.login-forgot:hover{text-decoration:underline}
 
 /* Error message */
 .note.error{animation:slideDown 0.3s ease;margin-top:12px}
 @keyframes slideDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
 
-/* Submit button - centered */
-.btn.g{width:100%;max-width:240px;margin:26px auto 0 auto;display:block}
+/* Sign In button - full width */
+.btn.g{width:100%;margin-top:24px}
+
+/* Remember Me / Forgot Password row */
+.login-options{display:flex;align-items:center;justify-content:space-between;margin-top:18px;font-size:.8rem;color:var(--mut)}
+.login-options label{margin:0}
+.login-options input[type="checkbox"]{accent-color:var(--gold)}
+.login-forgot{text-decoration:none;color:var(--gold);font-size:.8rem}
+.login-forgot:hover{text-decoration:underline}
 
 /* Footer */
 .login-footer{margin-top:28px}
@@ -51,6 +53,12 @@
 /* Form messages */
 .note{font-size:.82rem;margin-top:8px;padding:8px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--line);color:var(--mut)}
 .note.f{color:var(--ink)}
+
+/* Responsive */
+@media (max-width:480px){
+  #login-container{margin:20px 16px;padding:0}
+  .login-card{padding:24px 20px}
+}
 .adm{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:100vh}
 .adm[hidden]{display:none}
 .adm-toggle{display:none}
