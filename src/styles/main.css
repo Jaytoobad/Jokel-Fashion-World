@@ -64,9 +64,9 @@ header.open .logo,header.open .burger{color:var(--invt)}
 
 .hero{min-height:100svh;display:grid;align-items:end;position:relative;background:var(--inv);color:var(--invt);overflow:hidden;padding:130px 0 60px;opacity:1;visibility:visible}
 
-.hero .ph{position:absolute;inset:0 0;opacity:.85;width:100%;height:100%;background-size:cover;background-position:center}
+.hero .ph{position:absolute;inset:0 0;opacity:.85;width:100%;height:100%;z-index:0;background-size:cover;background-position:center}
 
-.hero .w{position:relative}
+.hero .w{position:relative;z-index:1}
 
 .hero .ln{display:block;overflow:hidden}.hero .ln span{display:inline-block}
 
