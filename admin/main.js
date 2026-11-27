@@ -495,6 +495,11 @@ async function doLogin(email, password) {
     initApp();
   } catch (e) {
     msg.hidden = false; msg.textContent = e.message; msg.className = 'note f error';
+    const emailEl = $('#login-email');
+    const pwEl = $('#login-password');
+    if (emailEl) emailEl.classList.add('error');
+    if (pwEl) pwEl.classList.add('error');
+    emailEl?.focus();
   } finally { btn.disabled = false; btn.textContent = 'Sign In'; }
 }
 
@@ -508,42 +513,40 @@ function showLoginForm() {
   $('#user-info').hidden = true;
   $('#sign-out').hidden = true;
   const loginHtml = `
-    <div id="login-container" style="max-width:400px;margin:60px auto;padding:0">
+    <div class="login-wrapper">
       <div class="login-card">
-        <div class="login-header">
-          <img src="/images/logo.png" alt="" width="40" height="40">
-          <div>
-            <h2 style="margin:0 0 4px 0">Jokel Admin</h2>
-            <p style="margin:0;color:var(--mut);font-size:.85rem">Sign in to manage your fashion house</p>
+        <div class="login-branding">
+          <img src="/images/logo.png" alt="Jokel" class="login-logo" width="40" height="40">
+          <div class="login-branding-copy">
+            <h2>Jokel Admin</h2>
+            <p class="login-subtitle">Sign in to manage your fashion house</p>
           </div>
         </div>
-        <div class="login-divider"></div>
-        <form id="login-form">
+        <div class="login-divider" aria-hidden="true"></div>
+        <form id="login-form" class="login-form">
           <div class="field">
-            <label class="field-label">Email</label>
-            <div class="field-input-wrap">
-              <input type="email" name="email" required autocomplete="email" class="login-input" placeholder="you@studio.com">
-            </div>
+            <label class="field-label" for="login-email">Email</label>
+            <input type="email" id="login-email" name="email" required autocomplete="email" class="login-input" placeholder="you@studio.com">
           </div>
           <div class="field">
-            <label class="field-label">Password</label>
+            <label class="field-label" for="login-password">Password</label>
             <div class="field-input-wrap pw-wrap">
-              <input type="password" name="password" required autocomplete="current-password" class="login-input" placeholder="••••••••">
+              <input type="password" id="login-password" name="password" required autocomplete="current-password" class="login-input" placeholder="••••••••">
               <button type="button" id="login-toggle-pw" class="login-pw-toggle" aria-label="Toggle password visibility">&#128065;</button>
             </div>
           </div>
-          <div class="note f error" id="login-msg" hidden></div>
-          <button class="btn g" type="submit" id="login-btn">Sign In</button>
+          <p class="note f error" id="login-msg" hidden></p>
           <div class="login-options">
-            <label class="remember-label" style="display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--ink);font-size:.8rem;margin:0">
-              <input type="checkbox" name="remember" style="accent-color:var(--gold);margin:0">
+            <label class="remember-label" for="login-remember">
+              <input type="checkbox" id="login-remember" name="remember" class="remember-checkbox">
               Remember me
             </label>
-            <a href="#" class="login-forgot" style="text-decoration:none;color:var(--gold);font-size:.8rem">Forgot password?</a>
+            <a href="#" id="login-forgot" class="login-forgot">Forgot password?</a>
           </div>
+          <button class="btn g" type="submit" id="login-btn">Sign In</button>
         </form>
         <div class="login-footer">
-          <a href="/" class="login-back" style="text-decoration:none;color:var(--mut);font-size:.8rem">← Back to site</a>
+          <a href="/" class="login-back">← Back to site</a>
         </div>
       </div>
     </div>
@@ -561,16 +564,23 @@ function showLoginForm() {
     const fd = new FormData(e.target);
     const btn = $('#login-btn');
     const msg = $('#login-msg');
+    const emailEl = $('#login-email');
+    const pwEl = $('#login-password');
     btn.classList.add('loading');
     msg.hidden = true;
     msg.textContent = '';
     msg.className = 'note f error';
+    emailEl.classList.remove('error');
+    pwEl.classList.remove('error');
     try {
       await doLogin(fd.get('email'), fd.get('password'));
     } catch (e) {
       msg.hidden = false;
       msg.textContent = e.message;
       msg.className = 'note f error';
+      emailEl.classList.add('error');
+      pwEl.classList.add('error');
+      emailEl.focus();
     } finally {
       btn.classList.remove('loading');
     }
