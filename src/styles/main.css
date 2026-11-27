@@ -99,7 +99,7 @@ header.open .logo,header.open .burger{color:var(--invt)}
 
 .img-link{display:block;width:100%;height:100%;text-decoration:none;color:inherit}
 .event-full{width:100%;margin-top:24px}
-.event-full .ph{width:100%;height:480px;aspect-ratio:auto;background-size:cover;background-position:center}
+.event-full .ph{width:100%;aspect-ratio:3/4;max-height:620px;background-size:contain;background-repeat:no-repeat;background-position:center;margin:0 auto}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,6vw,90px);align-items:center}
 
 .two .ph{aspect-ratio:4/5}
