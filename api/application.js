@@ -12,6 +12,41 @@ function getSql() {
   return _sql;
 }
 
+function normalizePhone(phone) {
+  let p = String(phone || '').replace(/[\s\-+()]/g, '');
+  if (p.startsWith('0')) p = '233' + p.slice(1);
+  else if (!p.startsWith('233')) p = '233' + p;
+  return p;
+}
+
+async function sendSasusyncSms(message) {
+  const apiKey = process.env.SASUSYNC_API_KEY;
+  const adminPhones = (process.env.ADMIN_PHONES || '').split(',').map(e => e.trim()).filter(Boolean);
+  if (!apiKey || adminPhones.length === 0) return;
+
+  const recipients = adminPhones.map(normalizePhone);
+  const url = process.env.SASUSYNC_SANDBOX === 'true'
+    ? 'https://sms.sasusync.com/smssandbox/v1/send'
+    : 'https://sms.sasusync.com/api/v1/send';
+
+  try {
+    await fetch(url, {
+      method: 'POST',
+      headers: {
+        'X-API-Key': apiKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        sender: 'Jokel',
+        recipients,
+        message
+      })
+    });
+  } catch (e) {
+    console.error('Sasustync SMS failed:', e.message);
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -55,6 +90,13 @@ export default async function handler(req, res) {
       values (${vProgramme}, ${vFullName}, ${vEmail}, ${vPhone}, ${vDob}, ${vAddress || null}, ${vEducation}, ${vAdditional || null})
       returning reference
     `;
+
+    try {
+      await sendSasusyncSms(`New application ${row.reference}: ${vFullName} (${vPhone}) applied for ${vProgramme}. View at /admin`);
+    } catch (e) {
+      console.error('Sasustync SMS notification failed:', e.message);
+    }
+
     return res.status(201).json({ success: true, reference: row.reference });
   } catch (e) {
     console.error('Application error:', e);

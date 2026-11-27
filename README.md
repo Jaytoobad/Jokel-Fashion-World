@@ -55,7 +55,7 @@ Everything visual: all nine pages, mobile menu, animations (respecting reduced m
 
 - **Hash routing** (`#about`) is not search-engine friendly. Real URLs, a sitemap and per-page metadata need a router. **Added:** `public/sitemap.xml` and per-page `<title>` + `<meta name="description">` per route. Sitemap referenced in `public/robots.txt`.
 - **No online payments, by the owner's decision.** Fees are discussed by phone and paid in person, so no payment code is needed.
-- **Email notification** to owner when an application arrives — not yet implemented (see `docs/ADMIN.md`). SMS alternative can be added via Twilio or similar.
+- **SMS notification** to owner when an application arrives — implemented via SasuSync in `api/application.js`; requires `SASUSYNC_API_KEY` and `ADMIN_PHONES` env vars in Vercel to activate. Set `SASUSYNC_SANDBOX=true` to test without sending real SMS.
 
 ## How to test a submission
 
@@ -85,6 +85,9 @@ Everything visual: all nine pages, mobile menu, animations (respecting reduced m
    - `DATABASE_URL` (from Neon's connection string)
    - `RATE_LIMIT_SALT` (random string, e.g. `openssl rand -hex 32`)
    - `ADMIN_EMAILS` (comma-separated staff emails, e.g. `joanna@example.com,staff@example.com`)
+   - `SASUSYNC_API_KEY` (optional, for SMS application notifications)
+   - `ADMIN_PHONES` (optional, comma-separated admin phone numbers for SMS alerts, e.g. `233556213555`)
+   - `SASUSYNC_SANDBOX` (optional, set `true` to test without sending real SMS)
    - Clerk keys (see `docs/ADMIN.md`)
 4. Redeploy. The functions at `/api/enquiry`, `/api/application`, and `/api/admin/*` will now work.
 
