@@ -15,13 +15,14 @@
 
 /* Form fields */
 .field{margin:0}
-.field + .field{margin-top:20px}
+.field + .field{margin-top:16px}
 .field-label{display:block;font-size:.8rem;color:var(--mut);text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px}
 .field-input-wrap{position:relative;width:100%}
-.login-input{width:100%;padding:12px 44px 12px 14px;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:10px;font:inherit;font-size:.9rem;box-sizing:border-box}
+.login-input{width:100%;padding:12px 14px;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:10px;font:inherit;font-size:.9rem;box-sizing:border-box}
 .login-input:focus{outline:0;border-color:var(--gold);box-shadow:0 0 0 3px rgba(220,174,60,0.1)}
 .login-pw-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--mut);cursor:pointer;font-size:1.1rem;padding:0;line-height:1}
 .login-pw-toggle:hover{color:var(--ink)}
+.field-input-wrap .login-input{padding-right:44px}
 
 /* Options row */
 .login-options{display:flex;align-items:center;justify-content:space-between;margin-top:18px;font-size:.8rem;color:var(--mut)}
