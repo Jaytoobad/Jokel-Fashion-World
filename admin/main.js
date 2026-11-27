@@ -556,7 +556,21 @@ function showLoginForm() {
   $('#login-form').onsubmit = async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
-    await doLogin(fd.get('email'), fd.get('password'));
+    const btn = $('#login-btn');
+    const msg = $('#login-msg');
+    btn.classList.add('loading');
+    msg.hidden = true;
+    msg.textContent = '';
+    msg.className = 'note f error';
+    try {
+      await doLogin(fd.get('email'), fd.get('password'));
+    } catch (e) {
+      msg.hidden = false;
+      msg.textContent = e.message;
+      msg.className = 'note f error';
+    } finally {
+      btn.classList.remove('loading');
+    }
   };
   $('#login-toggle-pw')?.addEventListener('click', () => {
     const inp = $('input[name="password"]');
