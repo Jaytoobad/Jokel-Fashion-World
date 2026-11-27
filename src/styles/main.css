@@ -97,7 +97,7 @@ header.open .logo,header.open .burger{color:var(--invt)}
 
 .ph.rv.in{clip-path:inset(0)}
 
-.img-link{display:inline-block;text-decoration:none;color:inherit}
+.img-link{display:block;width:100%;height:100%;text-decoration:none;color:inherit}
 .event-full{width:100%;margin-top:24px}
 .event-full .ph{width:100%;height:480px;aspect-ratio:auto;background-size:cover;background-position:center}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,6vw,90px);align-items:center}
