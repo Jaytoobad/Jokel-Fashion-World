@@ -526,7 +526,7 @@ function showLoginForm() {
             <button type="button" id="login-toggle-pw" class="login-pw-toggle" aria-label="Toggle password visibility">&#128065;</button>
           </div>
           <div class="note f error" id="login-msg" hidden></div>
-          <button class="btn g" type="submit" id="login-btn" style="width:100;margin-top:24px">Sign In</button>
+          <button class="btn g" type="submit" id="login-btn" style="width:100%;margin-top:24px">Sign In</button>
         </form>
         <div class="login-footer" style="margin-top:20px">
           <a href="/" class="login-back" style="text-decoration:none;color:var(--mut);font-size:.8rem">← Back to site</a>
