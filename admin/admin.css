@@ -4,15 +4,26 @@
 .adm-body::before{display:none}
 
 /* Login page */
-.login-card{background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:32px 28px;box-shadow:0 24px 60px #000a;border-top:3px solid var(--gold)}
-.login-header{display:flex;align-items:center;gap:14px;margin-bottom:26px}
+.login-card{background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:32px 28px;box-shadow:0 24px 60px #000a;border-top:3px solid var(--gold);position:relative;overflow:hidden}
+.login-card::before{content:"";position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+.login-header{display:flex;align-items:center;gap:14px;margin-bottom:24px}
 .login-header img{border-radius:8px;border:1px solid var(--line)}
 .login-header div{flex:1}
 .login-header h2{margin:0 0 2px 0;font-family:var(--serif);font-size:1.5rem;color:var(--ink)}
 .login-header p{margin:0;color:var(--mut);font-size:.82rem}
+.login-divider{height:1px;background:linear-gradient(90deg,transparent,var(--line),transparent);margin:22px 0}
+.field{margin:0}
+.field input{margin-top:8px;width:100%;padding:12px 14px;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:10px;font:inherit;font-size:.9rem;box-sizing:border-box}
+.field input:focus{outline:0;border-color:var(--gold);box-shadow:0 0 0 3px rgba(220,174,60,0.1)}
 .login-input{width:100%;padding:12px 14px;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:10px;font:inherit;font-size:.9rem;box-sizing:border-box}
-.login-input:focus{outline:0;border-color:var(--gold)}
+.login-input:focus{outline:0;border-color:var(--gold);box-shadow:0 0 0 3px rgba(220,174,60,0.1)}
 .login-pw-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--mut);cursor:pointer;font-size:1.1rem;padding:0;line-height:1}
+.login-pw-toggle:hover{color:var(--ink)}
+.login-options{margin-top:14px;display:flex;align-items:center;justify-content:space-between;font-size:.8rem;color:var(--mut)}
+.login-options label{display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--ink);margin:0;font-size:.8rem}
+.login-options input[type="checkbox"]{accent-color:var(--gold);width:auto;margin:0}
+.login-forgot{text-decoration:none;color:var(--gold);font-size:.8rem}
+.login-forgot:hover{text-decoration:underline}
 .login-back:hover{color:var(--gold)}
 
 /* Form messages */
